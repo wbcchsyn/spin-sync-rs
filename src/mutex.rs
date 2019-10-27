@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::AtomicU8;
 
@@ -29,6 +29,12 @@ impl<T: ?Sized> Deref for MutexGuard<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.mutex.data.get() }
+    }
+}
+
+impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.mutex.data.get() }
     }
 }
 
