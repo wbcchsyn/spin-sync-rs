@@ -1,4 +1,5 @@
 use std::cell::UnsafeCell;
+use std::ops::Deref;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::AtomicU8;
 
@@ -21,6 +22,14 @@ pub struct Mutex<T: ?Sized> {
 /// unlocked.
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
+}
+
+impl<T: ?Sized> Deref for MutexGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.mutex.data.get() }
+    }
 }
 
 //
