@@ -20,6 +20,9 @@ pub struct Mutex<T: ?Sized> {
 ///
 /// When this structure is dropped (falls out of scope), the lock will be
 /// unlocked.
+///
+/// The data protected by the mutex can be accessed through this guard via its
+/// Deref and DerefMut implementations.
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
 }
