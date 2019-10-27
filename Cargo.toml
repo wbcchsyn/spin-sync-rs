@@ -6,4 +6,6 @@ edition = "2018"
 
 license = "MIT"
 
+repository = "https://github.com/wbcchsyn/spin-lock-rs.git"
+
 [dependencies]
