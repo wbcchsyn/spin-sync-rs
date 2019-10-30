@@ -74,3 +74,9 @@ fn is_locked(s: LockState) -> bool {
     check_lock_status(s);
     (s % 2) == 1
 }
+
+/// Check the status is poisoned or not.
+fn is_poisoned(s: LockState) -> bool {
+    check_lock_status(s);
+    (s / 2) == 1
+}
