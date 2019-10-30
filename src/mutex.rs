@@ -28,6 +28,16 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
     poison_flag: bool, // true if this mutex is poisoned; otherwise false.
 }
 
+impl<'a, T: ?Sized> MutexGuard<'a, T> {
+    fn new(mutex: &'a Mutex<T>, status: LockState) -> Self {
+        check_lock_status(status);
+        debug_assert!(is_locked(status));
+
+        let poison_flag = is_poisoned(status);
+        Self { mutex, poison_flag }
+    }
+}
+
 impl<T: ?Sized> Deref for MutexGuard<'_, T> {
     type Target = T;
 
