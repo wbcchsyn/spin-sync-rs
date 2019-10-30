@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
-use std::sync::atomic::AtomicU8;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 /// A mutual exclusion primitive useful for protecting shared data
 ///
@@ -35,6 +35,25 @@ impl<'a, T: ?Sized> MutexGuard<'a, T> {
 
         let poison_flag = is_poisoned(status);
         Self { mutex, poison_flag }
+    }
+}
+
+impl<T: ?Sized> Drop for MutexGuard<'_, T> {
+    fn drop(&mut self) {
+        let old_status = self.mutex.lock.load(Ordering::Acquire);
+
+        check_lock_status(old_status);
+        debug_assert!(is_locked(old_status));
+
+        let new_status = if self.poison_flag {
+            POISON_UNLOCKED
+        } else if std::thread::panicking() {
+            POISON_UNLOCKED
+        } else {
+            UNLOCKED
+        };
+
+        self.mutex.lock.store(new_status, Ordering::Release);
     }
 }
 
