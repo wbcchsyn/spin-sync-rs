@@ -200,6 +200,37 @@ impl<T: ?Sized> Mutex<T> {
         return is_poisoned(status);
     }
 
+    /// Returns a mutable reference to the underlying data.
+    ///
+    /// Since this call borrows the mutable reference, no lock is needed.
+    ///
+    /// # Errors
+    ///
+    /// If another user panicked whild holding this mutex, this function call
+    /// will wrap the result in a error and return it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_lock::Mutex;
+    ///
+    /// let mut mutex = Mutex::new(0);
+    /// *mutex.get_mut().unwrap() = 10;
+    /// assert_eq!(10, *mutex.lock().unwrap());
+    /// ```
+    pub fn get_mut(&mut self) -> LockResult<&mut T> {
+        // There is no other references to `self` because the argument is
+        // a mutable reference.
+        // No lock is required.
+        let data = unsafe { &mut *self.data.get() };
+
+        if self.is_poisoned() {
+            Err(PoisonError::new(data))
+        } else {
+            Ok(data)
+        }
+    }
+
     /// Try to acquire the lock.
     ///
     /// On success, return the guard; otherwise, the previous LockState.
