@@ -3,6 +3,9 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU8, Ordering};
 
+// Aliases to the return type defined in std::sync.
+pub use std::sync::{LockResult, PoisonError, TryLockError, TryLockResult};
+
 /// A mutual exclusion primitive useful for protecting shared data
 ///
 /// The interface resembles that of std::sync::Mutex.
@@ -18,7 +21,7 @@ pub struct Mutex<T: ?Sized> {
 
 impl<T> Mutex<T> {
     /// Creates a new mutex in an unlocked state ready for use.
-    fn new(t: T) -> Self {
+    pub fn new(t: T) -> Self {
         Mutex {
             lock: AtomicU8::new(UNLOCKED),
             data: UnsafeCell::new(t),
