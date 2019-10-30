@@ -16,6 +16,16 @@ pub struct Mutex<T: ?Sized> {
     data: UnsafeCell<T>,
 }
 
+impl<T> Mutex<T> {
+    /// Creates a new mutex in an unlocked state ready for use.
+    fn new(t: T) -> Self {
+        Mutex {
+            lock: AtomicU8::new(UNLOCKED),
+            data: UnsafeCell::new(t),
+        }
+    }
+}
+
 /// An RAII implementation of a "scoped lock" of a mutex.
 ///
 /// When this structure is dropped (falls out of scope), the lock will be
