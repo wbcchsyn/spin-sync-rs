@@ -25,6 +25,7 @@ pub struct Mutex<T: ?Sized> {
 /// Deref and DerefMut implementations.
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
+    poison_flag: bool, // true if this mutex is poisoned; otherwise false.
 }
 
 impl<T: ?Sized> Deref for MutexGuard<'_, T> {
