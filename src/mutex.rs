@@ -53,3 +53,13 @@ unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
 
 impl<T: ?Sized> !Send for MutexGuard<'_, T> {}
 unsafe impl<T: ?Sized + Sync> Sync for MutexGuard<'_, T> {}
+
+//
+// Constants to represent lock state
+//
+type LockState = u8;
+const UNLOCKED: LockState = 0;
+const LOCKED: LockState = 1;
+const POISON_UNLOCKED: LockState = 2;
+const POISON_LOCKED: LockState = 3;
+const MAX_LOCK_STATE: LockState = 3;
