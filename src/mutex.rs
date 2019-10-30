@@ -42,6 +42,8 @@ impl<T: ?Sized> Mutex<T> {
     /// If another user panicked while holding this mutex, this method call wraps
     /// the guard in an error and return it.
     ///
+    /// # Example
+    ///
     /// ```
     ///    use spin_lock::Mutex;
     ///    use std::sync::Arc;
