@@ -27,6 +27,37 @@ impl<T> Mutex<T> {
             data: UnsafeCell::new(t),
         }
     }
+
+    /// Consumes this mutex and returns the underlying data.
+    ///
+    /// Since this call borrows the mutable reference, no lock is needed.
+    ///
+    /// # Errors
+    ///
+    /// If another user panicked whild holding this mutex, this function call
+    /// will wrap the result in a error and return it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_lock::Mutex;
+    ///
+    /// let mutex = Mutex::new(0);
+    /// assert_eq!(0, mutex.into_inner().unwrap());
+    /// ```
+    pub fn into_inner(self) -> LockResult<T> {
+        // There is no other references to `self` because the argument is
+        // a mutable reference.
+        // No lock is required.
+        let is_err = self.is_poisoned();
+        let data = self.data.into_inner();
+
+        if is_err {
+            Err(PoisonError::new(data))
+        } else {
+            Ok(data)
+        }
+    }
 }
 
 impl<T: ?Sized> Mutex<T> {
