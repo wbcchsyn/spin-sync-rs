@@ -89,6 +89,79 @@ impl<T: ?Sized> Mutex<T> {
         }
     }
 
+    /// Attempt to acquire this lock.
+    ///
+    /// If another user is holding this lock, return an error immediately;
+    /// otherwise, return a RAII guard.
+    ///
+    /// This function does not block.
+    ///
+    /// # Success
+    ///
+    /// If this function call succeeded to acquire this lock, and if no user has
+    /// never panicked while holding this mutex, this function call success and
+    /// return a RAII guard.
+    ///
+    /// # Errors
+    ///
+    /// - If another user is holding this mutex, return TryLockError::WouldBlock.
+    /// - If this function call succeeded to acquire the lock, and if another
+    ///   user paniced while holding this mutex, return
+    ///   TryLockError::Poisoned(PoisonError<MutexGuard<T>>)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///    use spin_lock::{Mutex, TryLockError};
+    ///    use std::sync::Arc;
+    ///    use std::thread;
+    ///
+    ///    let mutex = Arc::new(Mutex::new(0));
+    ///
+    ///    // Create a new thread to call mutex.try_to_lock() while holding
+    ///    // the mutex in main thread.
+    ///    {
+    ///        let guard = mutex.lock().unwrap();
+    ///        let mutex = mutex.clone();
+    ///
+    ///        thread::spawn(move || {
+    ///            match mutex.try_lock() {
+    ///                Err(TryLockError::WouldBlock) => assert!(true),
+    ///                _ => assert!(false),
+    ///            }
+    ///        }).join().unwrap();
+    ///    }
+    ///
+    ///    // Release the lock and try to increment the mutex value in another
+    ///    // thread.
+    ///    {
+    ///        let mutex = mutex.clone();
+    ///
+    ///        thread::spawn(move || {
+    ///            let mut num = mutex.try_lock().unwrap();
+    ///            *num += 1;
+    ///        }).join().unwrap();
+    ///    }
+    ///
+    ///    assert_eq!(1, *mutex.try_lock().unwrap());
+    /// ```
+    pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
+        match self.try_lock_once(UNLOCKED, LOCKED) {
+            // Assume this mutex is not poisoned and try to acquire the lock once.
+            Ok(g) => Ok(g),
+            Err(s) if is_locked(s) => Err(TryLockError::WouldBlock),
+            _ => {
+                // This mutex was poisoned.
+                // Try again.
+                if let Ok(g) = self.try_lock_once(POISON_UNLOCKED, POISON_LOCKED) {
+                    Err(TryLockError::Poisoned(PoisonError::new(g)))
+                } else {
+                    Err(TryLockError::WouldBlock)
+                }
+            }
+        }
+    }
+
     /// Try to acquire the lock.
     ///
     /// On success, return the guard; otherwise, the previous LockState.
