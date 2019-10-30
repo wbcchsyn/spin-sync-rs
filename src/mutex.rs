@@ -68,3 +68,9 @@ const MAX_LOCK_STATE: LockState = 3;
 fn check_lock_status(s: LockState) {
     debug_assert!(s <= MAX_LOCK_STATE);
 }
+
+/// Check the status is locked or not.
+fn is_locked(s: LockState) -> bool {
+    check_lock_status(s);
+    (s % 2) == 1
+}
