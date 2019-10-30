@@ -1,4 +1,5 @@
 use std::cell::UnsafeCell;
+use std::panic::UnwindSafe;
 use std::sync::atomic::AtomicU8;
 
 /// A mutual exclusion primitive useful for protecting shared data
@@ -21,3 +22,9 @@ pub struct Mutex<T: ?Sized> {
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
 }
+
+//
+// Marker Traits
+//
+
+impl<T: ?Sized> UnwindSafe for Mutex<T> {}
