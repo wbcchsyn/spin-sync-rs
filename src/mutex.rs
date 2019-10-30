@@ -29,3 +29,5 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
 
 impl<T: ?Sized> UnwindSafe for Mutex<T> {}
 impl<T: ?Sized> RefUnwindSafe for Mutex<T> {}
+
+unsafe impl<T: ?Sized + Send> Send for Mutex<T> {}
