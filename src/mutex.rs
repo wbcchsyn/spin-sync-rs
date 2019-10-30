@@ -296,7 +296,6 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
     fn new(mutex: &'a Mutex<T>, status: LockState) -> Self {
-        check_lock_status(status);
         debug_assert!(is_locked(status));
 
         let poison_flag = is_poisoned(status);
@@ -307,8 +306,6 @@ impl<'a, T: ?Sized> MutexGuard<'a, T> {
 impl<T: ?Sized> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
         let old_status = self.mutex.lock.load(Ordering::Acquire);
-
-        check_lock_status(old_status);
         debug_assert!(is_locked(old_status));
 
         let new_status = if self.poison_flag {
@@ -360,19 +357,14 @@ const POISON_UNLOCKED: LockState = 2;
 const POISON_LOCKED: LockState = 3;
 const MAX_LOCK_STATE: LockState = 3;
 
-/// Make sure the lock stauts is valid.
-fn check_lock_status(s: LockState) {
-    debug_assert!(s <= MAX_LOCK_STATE);
-}
-
 /// Check the status is locked or not.
 fn is_locked(s: LockState) -> bool {
-    check_lock_status(s);
+    debug_assert!(s <= MAX_LOCK_STATE);
     (s % 2) == 1
 }
 
 /// Check the status is poisoned or not.
 fn is_poisoned(s: LockState) -> bool {
-    check_lock_status(s);
+    debug_assert!(s <= MAX_LOCK_STATE);
     (s / 2) == 1
 }
