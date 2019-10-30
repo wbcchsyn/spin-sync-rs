@@ -63,3 +63,8 @@ const LOCKED: LockState = 1;
 const POISON_UNLOCKED: LockState = 2;
 const POISON_LOCKED: LockState = 3;
 const MAX_LOCK_STATE: LockState = 3;
+
+/// Make sure the lock stauts is valid.
+fn check_lock_status(s: LockState) {
+    debug_assert!(s <= MAX_LOCK_STATE);
+}
