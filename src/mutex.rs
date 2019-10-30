@@ -162,6 +162,44 @@ impl<T: ?Sized> Mutex<T> {
         }
     }
 
+    /// Determin whether the mutex is poisoned or not.
+    ///
+    /// # Warning
+    ///
+    /// This function won't acquire this lock. If another thread is active,
+    /// the mutex can become poisoned at any time. You should not trust a `false`
+    /// value for program correctness without additional synchronization.
+    ///
+    /// This behavior is same to std::sync::Mutex::is_poisoned().
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_lock::Mutex;
+    /// use std::sync::Arc;
+    /// use std::thread;
+    ///
+    /// let mutex = Arc::new(Mutex::new(0));
+    /// assert_eq!(false, mutex.is_poisoned());
+    ///
+    /// {
+    ///     let mutex = mutex.clone();
+    ///
+    ///     let _ = thread::spawn(move || {
+    ///         let _guard = mutex.lock().unwrap();
+    ///         panic!("Poison this mutex");
+    ///     }).join();
+    /// }
+    ///
+    /// assert_eq!(true, mutex.is_poisoned());
+    /// ```
+    pub fn is_poisoned(&self) -> bool {
+        // Don't acquire any lock; otherwise, this function will cause
+        // a deadlock if the caller thread is holding the lock.
+        let status = self.lock.load(Ordering::Relaxed);
+        return is_poisoned(status);
+    }
+
     /// Try to acquire the lock.
     ///
     /// On success, return the guard; otherwise, the previous LockState.
