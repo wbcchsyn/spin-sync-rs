@@ -29,6 +29,84 @@ impl<T> Mutex<T> {
     }
 }
 
+impl<T: ?Sized> Mutex<T> {
+    /// Acquires a mutex, blocking the current thread until it is able to do so.
+    ///
+    /// This function will block the local thread until it is available to acquire
+    /// the mutex. Upon returning, the thread is the only thread with the lock
+    /// held. An RAII guard is returned to allow scoped unlock of the lock. When
+    /// the guard goes out of scope, the mutex will be unlocked.
+    ///
+    /// # Errors
+    ///
+    /// If another user panicked while holding this mutex, this method call wraps
+    /// the guard in an error and return it.
+    ///
+    /// ```
+    ///    use spin_lock::Mutex;
+    ///    use std::sync::Arc;
+    ///    use std::thread;
+    ///
+    ///    const NUM: usize = 10;
+    ///
+    ///    let mutex = Arc::new(Mutex::new(0));
+    ///    let mut handles = Vec::with_capacity(NUM);
+    ///
+    ///    for _ in 0..NUM {
+    ///        let mutex = mutex.clone();
+    ///        let handle = thread::spawn(move || {
+    ///            let mut num = mutex.lock().unwrap();
+    ///            *num += 1;
+    ///        });
+    ///        handles.push(handle);
+    ///    }
+    ///
+    ///    for handle in handles {
+    ///        handle.join().unwrap();
+    ///    }
+    ///
+    ///    assert_eq!(NUM, *mutex.lock().unwrap());
+    /// ```
+    pub fn lock(&self) -> LockResult<MutexGuard<T>> {
+        // Assume this mutex is not poisoned and try to lock.
+        loop {
+            match self.try_lock_once(UNLOCKED, LOCKED) {
+                Ok(g) => return Ok(g),             // succeeded
+                Err(s) if is_poisoned(s) => break, // poisoned.
+                _ => std::thread::yield_now(),     // locked
+            }
+        }
+
+        // This mutex is found to be poisoned.
+        // Try to lock again.
+        loop {
+            match self.try_lock_once(POISON_UNLOCKED, POISON_LOCKED) {
+                Ok(g) => return Err(PoisonError::new(g)),
+                _ => std::thread::yield_now(),
+            }
+        }
+    }
+
+    /// Try to acquire the lock.
+    ///
+    /// On success, return the guard; otherwise, the previous LockState.
+    fn try_lock_once(
+        &self,
+        expected: LockState,
+        desired: LockState,
+    ) -> Result<MutexGuard<T>, LockState> {
+        let prev = self
+            .lock
+            .compare_and_swap(expected, desired, Ordering::Acquire);
+
+        if prev == expected {
+            Ok(MutexGuard::new(self, desired))
+        } else {
+            Err(prev)
+        }
+    }
+}
+
 /// An RAII implementation of a "scoped lock" of a mutex.
 ///
 /// When this structure is dropped (falls out of scope), the lock will be
