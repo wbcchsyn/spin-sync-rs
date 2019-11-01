@@ -301,7 +301,7 @@ impl<'a, T: ?Sized> MutexGuard<'a, T> {
 
 impl<T: ?Sized> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
-        let old_status = self.mutex.lock.load(Ordering::Acquire);
+        let old_status = self.mutex.lock.load(Ordering::Relaxed);
         debug_assert!(is_locked(old_status));
 
         let new_status = if is_poisoned(old_status) || std::thread::panicking() {
