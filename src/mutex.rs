@@ -275,7 +275,7 @@ impl<T: ?Sized> Mutex<T> {
             .compare_and_swap(expected, desired, Ordering::Acquire);
 
         if prev == expected {
-            Ok(MutexGuard::new(self, desired))
+            Ok(MutexGuard::new(self))
         } else {
             Err(prev)
         }
@@ -291,15 +291,11 @@ impl<T: ?Sized> Mutex<T> {
 /// Deref and DerefMut implementations.
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
-    poison_flag: bool, // true if this mutex is poisoned; otherwise false.
 }
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
-    fn new(mutex: &'a Mutex<T>, status: LockState) -> Self {
-        debug_assert!(is_locked(status));
-
-        let poison_flag = is_poisoned(status);
-        Self { mutex, poison_flag }
+    fn new(mutex: &'a Mutex<T>) -> Self {
+        Self { mutex }
     }
 }
 
@@ -308,7 +304,7 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
         let old_status = self.mutex.lock.load(Ordering::Acquire);
         debug_assert!(is_locked(old_status));
 
-        let new_status = if self.poison_flag || std::thread::panicking() {
+        let new_status = if is_poisoned(old_status) || std::thread::panicking() {
             POISON_UNLOCKED
         } else {
             UNLOCKED
