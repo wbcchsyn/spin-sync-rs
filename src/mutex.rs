@@ -308,6 +308,12 @@ impl<T> From<T> for Mutex<T> {
     }
 }
 
+impl<T: ?Sized + Default> Default for Mutex<T> {
+    fn default() -> Self {
+        Mutex::new(T::default())
+    }
+}
+
 /// An RAII implementation of a "scoped lock" of a mutex.
 ///
 /// When this structure is dropped (falls out of scope), the lock will be
