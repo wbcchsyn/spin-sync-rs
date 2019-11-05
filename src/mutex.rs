@@ -366,6 +366,12 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'_, T> {
     }
 }
 
+impl<T: ?Sized + fmt::Display> fmt::Display for MutexGuard<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&**self, f)
+    }
+}
+
 //
 // Marker Traits
 //
