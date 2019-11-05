@@ -40,7 +40,7 @@ impl<T> Mutex<T> {
     /// # Examples
     ///
     /// ```
-    /// use spin_lock::Mutex;
+    /// use spin_sync::Mutex;
     ///
     /// let mutex = Mutex::new(0);
     /// assert_eq!(0, mutex.into_inner().unwrap());
@@ -76,7 +76,7 @@ impl<T: ?Sized> Mutex<T> {
     /// # Example
     ///
     /// ```
-    ///    use spin_lock::Mutex;
+    ///    use spin_sync::Mutex;
     ///    use std::sync::Arc;
     ///    use std::thread;
     ///
@@ -143,7 +143,7 @@ impl<T: ?Sized> Mutex<T> {
     /// # Examples
     ///
     /// ```
-    ///    use spin_lock::{Mutex, TryLockError};
+    ///    use spin_sync::{Mutex, TryLockError};
     ///    use std::sync::Arc;
     ///    use std::thread;
     ///
@@ -206,7 +206,7 @@ impl<T: ?Sized> Mutex<T> {
     /// # Examples
     ///
     /// ```
-    /// use spin_lock::Mutex;
+    /// use spin_sync::Mutex;
     /// use std::sync::Arc;
     /// use std::thread;
     ///
@@ -243,7 +243,7 @@ impl<T: ?Sized> Mutex<T> {
     /// # Examples
     ///
     /// ```
-    /// use spin_lock::Mutex;
+    /// use spin_sync::Mutex;
     ///
     /// let mut mutex = Mutex::new(0);
     /// *mutex.get_mut().unwrap() = 10;

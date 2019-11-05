@@ -1,5 +1,5 @@
 [package]
-name = "spin-lock"
+name = "spin-sync"
 version = "0.0.1"
 authors = ["Yoshida Shin <wbcchsyn@gmail.com>"]
 edition = "2018"
@@ -8,6 +8,6 @@ description = "Synchronization primitives using spinlock. The interface resemble
 
 license = "MIT"
 
-repository = "https://github.com/wbcchsyn/spin-lock-rs.git"
+repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
 
 [dependencies]
