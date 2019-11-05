@@ -103,19 +103,26 @@ impl<T: ?Sized> Mutex<T> {
     pub fn lock(&self) -> LockResult<MutexGuard<T>> {
         // Assume this mutex is not poisoned and try to lock.
         loop {
-            match self.try_lock_once(UNLOCKED, LOCKED) {
-                Ok(g) => return Ok(g),             // succeeded
-                Err(s) if is_poisoned(s) => break, // poisoned.
-                _ => std::thread::yield_now(),     // locked
+            match self
+                .lock
+                .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
+            {
+                UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
+                LOCKED => std::thread::yield_now(),           // locked
+                _ => break,                                   // poisoned
             }
         }
 
         // This mutex is found to be poisoned.
         // Try to lock again.
         loop {
-            match self.try_lock_once(POISON_UNLOCKED, POISON_LOCKED) {
-                Ok(g) => return Err(PoisonError::new(g)),
-                _ => std::thread::yield_now(),
+            match self
+                .lock
+                .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
+            {
+                POISON_UNLOCKED => return Err(PoisonError::new(MutexGuard::new(self))),
+                POISON_LOCKED => std::thread::yield_now(),
+                _ => panic!("Bag! program should not come here."),
             }
         }
     }
@@ -177,19 +184,26 @@ impl<T: ?Sized> Mutex<T> {
     ///    assert_eq!(1, *mutex.try_lock().unwrap());
     /// ```
     pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
-        match self.try_lock_once(UNLOCKED, LOCKED) {
-            // Assume this mutex is not poisoned and try to acquire the lock once.
-            Ok(g) => Ok(g),
-            Err(s) if is_locked(s) => Err(TryLockError::WouldBlock),
-            _ => {
-                // This mutex was poisoned.
-                // Try again.
-                if let Ok(g) = self.try_lock_once(POISON_UNLOCKED, POISON_LOCKED) {
-                    Err(TryLockError::Poisoned(PoisonError::new(g)))
-                } else {
-                    Err(TryLockError::WouldBlock)
-                }
-            }
+        // Assume this mutex is not poisoned and try to lock.
+        match self
+            .lock
+            .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
+        {
+            UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
+            s if is_locked(s) => return Err(TryLockError::WouldBlock), // locked,
+            _ => (),                                      // poisoned
+        }
+
+        // This mutex was poisoned. Try again.
+        match self
+            .lock
+            .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
+        {
+            POISON_LOCKED => Err(TryLockError::WouldBlock),
+            POISON_UNLOCKED => Err(TryLockError::Poisoned(PoisonError::new(MutexGuard::new(
+                self,
+            )))),
+            _ => panic!("Bag!, program should not come here."),
         }
     }
 
@@ -259,25 +273,6 @@ impl<T: ?Sized> Mutex<T> {
             Err(PoisonError::new(data))
         } else {
             Ok(data)
-        }
-    }
-
-    /// Try to acquire the lock.
-    ///
-    /// On success, return the guard; otherwise, the previous LockState.
-    fn try_lock_once(
-        &self,
-        expected: LockState,
-        desired: LockState,
-    ) -> Result<MutexGuard<T>, LockState> {
-        let prev = self
-            .lock
-            .compare_and_swap(expected, desired, Ordering::Acquire);
-
-        if prev == expected {
-            Ok(MutexGuard::new(self))
-        } else {
-            Err(prev)
         }
     }
 }
