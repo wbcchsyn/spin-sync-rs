@@ -1,4 +1,5 @@
 use std::cell::UnsafeCell;
+use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -273,6 +274,30 @@ impl<T: ?Sized> Mutex<T> {
             Err(PoisonError::new(data))
         } else {
             Ok(data)
+        }
+    }
+}
+
+impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.try_lock() {
+            Ok(guard) => f.debug_struct("Mutex").field("data", &&*guard).finish(),
+            Err(TryLockError::Poisoned(err)) => f
+                .debug_struct("Mutex")
+                .field("data", &&**err.get_ref())
+                .finish(),
+            Err(TryLockError::WouldBlock) => {
+                struct LockedPlaceholder;
+                impl fmt::Debug for LockedPlaceholder {
+                    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                        f.write_str("<locked>")
+                    }
+                }
+
+                f.debug_struct("Mutex")
+                    .field("data", &LockedPlaceholder)
+                    .finish()
+            }
         }
     }
 }
