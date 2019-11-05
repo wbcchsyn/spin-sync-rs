@@ -302,6 +302,12 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
     }
 }
 
+impl<T> From<T> for Mutex<T> {
+    fn from(t: T) -> Self {
+        Mutex::new(t)
+    }
+}
+
 /// An RAII implementation of a "scoped lock" of a mutex.
 ///
 /// When this structure is dropped (falls out of scope), the lock will be
