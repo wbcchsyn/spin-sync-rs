@@ -360,6 +360,12 @@ impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
     }
 }
 
+impl<T: ?Sized + fmt::Debug> fmt::Debug for MutexGuard<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&**self, f)
+    }
+}
+
 //
 // Marker Traits
 //
