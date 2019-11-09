@@ -57,3 +57,5 @@ unsafe impl<T: ?Sized + Send + Sync> Sync for RwLock<T> {}
 
 unsafe impl<T: ?Sized + Sync> Sync for RwLockReadGuard<'_, T> {}
 impl<T: ?Sized> !Send for RwLockReadGuard<'_, T> {}
+
+unsafe impl<T: ?Sized + Sync> Sync for RwLockWriteGuard<'_, T> {}
