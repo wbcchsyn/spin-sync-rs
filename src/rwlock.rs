@@ -32,3 +32,9 @@ pub struct RwLock<T: ?Sized> {
     lock: AtomicU64,
     data: UnsafeCell<T>,
 }
+
+/// RAII structure used to release the shared read access of a lock when
+/// dropped.
+pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
+    rwlock: &'a RwLock<T>,
+}
