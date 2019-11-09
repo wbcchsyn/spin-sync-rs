@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use std::panic::UnwindSafe;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::AtomicU64;
 
 /// A reader-writer lock
@@ -50,3 +50,4 @@ pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
 // Marker Traits
 //
 impl<T: ?Sized> UnwindSafe for RwLock<T> {}
+impl<T: ?Sized> RefUnwindSafe for RwLock<T> {}
