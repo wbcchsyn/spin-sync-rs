@@ -51,3 +51,5 @@ pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
 //
 impl<T: ?Sized> UnwindSafe for RwLock<T> {}
 impl<T: ?Sized> RefUnwindSafe for RwLock<T> {}
+
+unsafe impl<T: ?Sized + Send + Sync> Sync for RwLock<T> {}
