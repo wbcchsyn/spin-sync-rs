@@ -38,3 +38,9 @@ pub struct RwLock<T: ?Sized> {
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
+
+/// RAII structure used to release the exclusive write access of a lock when
+/// dropped.
+pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
+    rwlock: &'a RwLock<T>,
+}
