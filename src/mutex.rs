@@ -394,12 +394,6 @@ const POISON_UNLOCKED: LockStatus = 2;
 const POISON_LOCKED: LockStatus = 3;
 const MAX_LOCK_STATE: LockStatus = 3;
 
-/// Check the status is poisoned or not.
-fn is_poisoned(s: LockStatus) -> bool {
-    debug_assert!(s <= MAX_LOCK_STATE);
-    (s / 2) == 1
-}
-
 const INIT: LockStatus = 0;
 const LOCK_FLAG: LockStatus = 0x01;
 const POISON_FLAG: LockStatus = 0x02;
@@ -409,4 +403,10 @@ const NOT_USED_MASK: LockStatus = 0xfc;
 fn is_locked(s: LockStatus) -> bool {
     debug_assert_eq!(0, s & NOT_USED_MASK);
     (s & LOCK_FLAG) != 0
+}
+
+#[must_use]
+fn is_poisoned(s: LockStatus) -> bool {
+    debug_assert_eq!(0, s & NOT_USED_MASK);
+    (s & POISON_FLAG) != 0
 }
