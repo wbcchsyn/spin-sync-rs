@@ -71,6 +71,11 @@ const SHARED_LOCK_MASK: LockStatus = 0x3fffffffffffffff;
 const EXCLUSIVE_LOCK_FLAG: LockStatus = 0x4000000000000000;
 const POISON_FLAG: LockStatus = 0x8000000000000000;
 
+#[must_use]
+fn is_poisoned(s: LockStatus) -> bool {
+    (s & POISON_FLAG) != 0
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
