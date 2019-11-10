@@ -105,6 +105,14 @@ impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
     }
 }
 
+impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.rwlock.data.get() }
+    }
+}
+
 impl<T: ?Sized> RwLockWriteGuard<'_, T> {
     /// Make sure to release the exclusive write lock.
     ///
