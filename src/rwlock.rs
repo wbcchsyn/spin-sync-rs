@@ -97,6 +97,17 @@ fn is_locked_exclusively(s: LockStatus) -> bool {
     ret
 }
 
+#[must_use]
+fn count_shared_locks(s: LockStatus) -> u64 {
+    let ret = s & SHARED_LOCK_MASK;
+
+    if 0 < ret {
+        debug_assert_eq!(0, s & EXCLUSIVE_LOCK_FLAG);
+    }
+
+    ret
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
