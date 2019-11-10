@@ -86,6 +86,17 @@ fn is_locked(s: LockStatus) -> bool {
     s & (!POISON_FLAG) != 0
 }
 
+#[must_use]
+fn is_locked_exclusively(s: LockStatus) -> bool {
+    let ret = (s & EXCLUSIVE_LOCK_FLAG) != 0;
+
+    if ret {
+        debug_assert_eq!(0, s & SHARED_LOCK_MASK);
+    }
+
+    ret
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
