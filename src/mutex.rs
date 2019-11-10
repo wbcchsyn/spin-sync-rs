@@ -374,11 +374,6 @@ unsafe impl<T: ?Sized + Sync> Sync for MutexGuard<'_, T> {}
 // Constants to represent lock state
 //
 type LockStatus = u8;
-const UNLOCKED: LockStatus = 0;
-const LOCKED: LockStatus = 1;
-const POISON_UNLOCKED: LockStatus = 2;
-const POISON_LOCKED: LockStatus = 3;
-const MAX_LOCK_STATE: LockStatus = 3;
 
 const INIT: LockStatus = 0;
 const LOCK_FLAG: LockStatus = 0x01;
