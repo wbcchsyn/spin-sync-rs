@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::mutex::{PoisonError, TryLockError, TryLockResult};
+use crate::mutex::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A reader-writer lock
 ///
@@ -54,6 +54,81 @@ impl<T> RwLock<T> {
 }
 
 impl<T: ?Sized> RwLock<T> {
+    /// Locks this rwlock with shared read access, blocking the current thread
+    /// until it can be acquired.
+    ///
+    /// The calling thread will be blocked until there are no more writers which
+    /// hold the lock. There may be other readers currently inside the lock when
+    /// this method returns. This method does not provide any guarantees with
+    /// respect to the ordering of whether contentious readers or writers will
+    /// acquire the lock first.
+    ///
+    /// Returns an RAII guard which will release this thread's shared access
+    /// once it is dropped.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the RwLock is poisoned. An RwLock
+    /// is poisoned whenever a writer panics while holding an exclusive lock.
+    /// The failure will occur immediately after the lock has been acquired.
+    ///
+    /// # Panics
+    ///
+    /// Cause panic if the maximum count of shared locks are being holded. (maximum
+    /// number is 0x3fffffffffffffff.)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::Arc;
+    /// use std::thread;
+    /// use spin_sync::RwLock;
+    ///
+    /// let lock = Arc::new(RwLock::new(1));
+    ///
+    /// let guard1 = lock.read().unwrap();
+    /// assert_eq!(1, *guard1);
+    ///
+    /// let guard2 = lock.read().unwrap();
+    /// assert_eq!(1, *guard2);
+    /// ```
+    pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
+        // Assume not poisoned, no user is holding the lock at first.
+        let mut expected = INIT;
+
+        loop {
+            // Try to acquire the lock.
+            let desired = acquire_shared_lock(expected);
+            let current = self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire);
+
+            // Succeeded.
+            if current == expected {
+                let guard = RwLockReadGuard::new(self);
+
+                if is_poisoned(current) {
+                    return Err(PoisonError::new(guard));
+                } else {
+                    return Ok(guard);
+                }
+            }
+
+            if is_locked_exclusively(current) {
+                // Another user is holding the exclusive write lock.
+                // Wait for a while and try again.
+                expected = release_exclusive_lock(current);
+                std::thread::yield_now();
+            } else {
+                // - Assumption was wrong.
+                // - Another user is acquiring the shared read lock at the same time.
+                // - Another user is poisoning this lock at the same time.
+                // Try again soon.
+                expected = current;
+            }
+        }
+    }
+
     /// Attempts to acquire this rwlock with shared read access.
     ///
     /// If the access could not be granted at this time, then `Err` is returned.
