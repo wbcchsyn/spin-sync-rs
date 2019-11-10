@@ -166,37 +166,12 @@ impl<T: ?Sized> RwLock<T> {
     /// assert_eq!(1, *guard1);
     /// ```
     pub fn try_read(&self) -> TryLockResult<RwLockReadGuard<T>> {
-        // Assume not poisoned, no user is holding the lock at first.
-        let mut expected = INIT;
-
-        loop {
-            // Try to acquire the lock.
-            let desired = acquire_shared_lock(expected);
-            let current = self
-                .lock
-                .compare_and_swap(expected, desired, Ordering::Acquire);
-
-            // Succeeded.
-            if current == expected {
-                let guard = RwLockReadGuard::new(self);
-
-                if is_poisoned(current) {
-                    return Err(TryLockError::Poisoned(PoisonError::new(guard)));
-                } else {
-                    return Ok(guard);
-                }
-            }
-
-            // Failed because another user is holding the exclusive write lock.
-            if is_locked_exclusively(current) {
-                return Err(TryLockError::WouldBlock);
-            }
-
-            // - Assumption was wrong.
-            // - Another user is acquiring the shared read lock at the same time.
-            // - Another user is poisoning this lock.
-            // Try again.
-            expected = current;
+        match self.try_lock(acquire_shared_lock, is_locked_exclusively) {
+            s if is_locked_exclusively(s) => Err(TryLockError::WouldBlock),
+            s if is_poisoned(s) => Err(TryLockError::Poisoned(PoisonError::new(
+                RwLockReadGuard::new(self),
+            ))),
+            _ => Ok(RwLockReadGuard::new(self)),
         }
     }
 
