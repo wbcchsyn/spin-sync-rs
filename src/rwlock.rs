@@ -251,34 +251,11 @@ impl<T: ?Sized> RwLock<T> {
     /// assert!(lock.try_write().is_err());
     /// ```
     pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, T>> {
-        // Assume not poisoned, no user is holding the lock at first.
-        let mut expected = INIT;
-
         loop {
-            // Try to acquire the lock.
-            let desired = acquire_exclusive_lock(expected);
-            let current = self
-                .lock
-                .compare_and_swap(expected, desired, Ordering::Acquire);
-
-            // Succeeded.
-            if current == expected {
-                let guard = RwLockWriteGuard::new(self);
-
-                if is_poisoned(current) {
-                    return Err(PoisonError::new(guard));
-                } else {
-                    return Ok(guard);
-                }
-            }
-
-            if is_locked(current) {
-                // Another user is holding the exclusive write lock.
-                // Wait for a while and try again.
-                std::thread::yield_now();
-            } else {
-                // Assumption was wrong (This rwlock is poisoned.)
-                expected = current;
+            match self.try_lock(acquire_exclusive_lock, is_locked) {
+                s if is_locked(s) => std::thread::yield_now(),
+                s if is_poisoned(s) => return Err(PoisonError::new(RwLockWriteGuard::new(self))),
+                _ => return Ok(RwLockWriteGuard::new(self)),
             }
         }
     }
