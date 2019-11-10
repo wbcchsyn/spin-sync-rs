@@ -1,6 +1,7 @@
 use std::cell::UnsafeCell;
+use std::ops::Deref;
 use std::panic::{RefUnwindSafe, UnwindSafe};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// A reader-writer lock
 ///
@@ -42,8 +43,53 @@ pub struct RwLock<T: ?Sized> {
 
 /// RAII structure used to release the shared read access of a lock when
 /// dropped.
+///
+/// The data protected by the RwLock can be accessed through this guard via its
+/// Deref implementation.
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
+}
+
+impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
+    #[must_use]
+    fn new(rwlock: &'a RwLock<T>) -> Self {
+        Self { rwlock }
+    }
+}
+
+impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.rwlock.data.get() }
+    }
+}
+
+impl<T: ?Sized> RwLockReadGuard<'_, T> {
+    /// Make sure to release the shared read lock.
+    /// This function will never poison the rwlock.
+    fn drop(&mut self) {
+        // Assume not poisoned and no other user is holding the lock at first.
+        let mut expected = acquire_shared_lock(INIT);
+
+        loop {
+            let desired = release_shared_lock(expected);
+            let current = self
+                .rwlock
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Release);
+
+            // Succeeded to release the lock.
+            if current == expected {
+                return;
+            }
+
+            // - Assumption was wrong.
+            // - Another user release the lock at the same time.
+            // Try again.
+            expected = current;
+        }
+    }
 }
 
 /// RAII structure used to release the exclusive write access of a lock when
