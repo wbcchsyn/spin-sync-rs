@@ -135,6 +135,12 @@ fn acquire_shared_lock(s: LockStatus) -> LockStatus {
     s + 1
 }
 
+#[must_use]
+fn release_shared_lock(s: LockStatus) -> LockStatus {
+    debug_assert!(0 < count_shared_locks(s));
+    s - 1
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
