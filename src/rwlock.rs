@@ -65,3 +65,31 @@ impl<T: ?Sized> !Send for RwLockWriteGuard<'_, T> {}
 // Helpers for Lock State
 //
 type LockStatus = u64;
+
+const INIT: LockStatus = 0;
+const SHARED_LOCK_MASK: LockStatus = 0x3fffffffffffffff;
+const EXCLUSIVE_LOCK_FLAG: LockStatus = 0x4000000000000000;
+const POISON_FLAG: LockStatus = 0x8000000000000000;
+
+#[cfg(test)]
+mod lock_state_tests {
+    use super::*;
+
+    #[test]
+    fn flag_duplication() {
+        assert_eq!(0, INIT & SHARED_LOCK_MASK);
+        assert_eq!(0, INIT & EXCLUSIVE_LOCK_FLAG);
+        assert_eq!(0, INIT & POISON_FLAG);
+        assert_eq!(0, SHARED_LOCK_MASK & EXCLUSIVE_LOCK_FLAG);
+        assert_eq!(0, SHARED_LOCK_MASK & POISON_FLAG);
+        assert_eq!(0, EXCLUSIVE_LOCK_FLAG & POISON_FLAG);
+    }
+
+    #[test]
+    fn flag_uses_all_bits() {
+        assert_eq!(
+            std::u64::MAX,
+            INIT | SHARED_LOCK_MASK | EXCLUSIVE_LOCK_FLAG | POISON_FLAG
+        );
+    }
+}
