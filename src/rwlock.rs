@@ -266,6 +266,70 @@ impl<T: ?Sized> RwLock<T> {
             expected = current;
         }
     }
+
+    /// Locks this rwlock with exclusive write access, blocking the current
+    /// thread until it can be acquired.
+    ///
+    /// This function will not return while other writers or other readers
+    /// currently have access to the lock.
+    ///
+    /// Returns an RAII guard which will drop the write access of this rwlock
+    /// when dropped.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the RwLock is poisoned. An RwLock
+    /// is poisoned whenever a writer panics while holding an exclusive lock.
+    /// An error will be returned when the lock is acquired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
+    ///
+    /// let lock = RwLock::new(1);
+    ///
+    /// let mut guard = lock.write().unwrap();
+    /// assert_eq!(1, *guard);
+    ///
+    /// *guard += 1;
+    /// assert_eq!(2, *guard);
+    ///
+    /// assert!(lock.try_read().is_err());
+    /// assert!(lock.try_write().is_err());
+    /// ```
+    pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, T>> {
+        // Assume not poisoned, no user is holding the lock at first.
+        let mut expected = INIT;
+
+        loop {
+            // Try to acquire the lock.
+            let desired = acquire_exclusive_lock(expected);
+            let current = self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire);
+
+            // Succeeded.
+            if current == expected {
+                let guard = RwLockWriteGuard::new(self);
+
+                if is_poisoned(current) {
+                    return Err(PoisonError::new(guard));
+                } else {
+                    return Ok(guard);
+                }
+            }
+
+            if is_locked(current) {
+                // Another user is holding the exclusive write lock.
+                // Wait for a while and try again.
+                std::thread::yield_now();
+            } else {
+                // Assumption was wrong (This rwlock is poisoned.)
+                expected = current;
+            }
+        }
+    }
 }
 
 /// RAII structure used to release the shared read access of a lock when
