@@ -265,6 +265,40 @@ impl<T: ?Sized> RwLock<T> {
             expected = current;
         }
     }
+
+    /// Determin whether the mutex is poisoned or not.
+    ///
+    /// # Warning
+    ///
+    /// This function won't acquire this lock. If another thread is active,
+    /// the rwlock can become poisoned at any time. You should not trust a `false`
+    /// value for program correctness without additional synchronization.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
+    /// use std::sync::Arc;
+    /// use std::thread;
+    ///
+    /// let lock = Arc::new(RwLock::new(0));
+    /// assert_eq!(false, lock.is_poisoned());
+    ///
+    /// {
+    ///     let lock = lock.clone();
+    ///
+    ///     let _ = thread::spawn(move || {
+    ///         let _guard = lock.write().unwrap();
+    ///         panic!("Poison this mutex");
+    ///     }).join();
+    /// }
+    ///
+    /// assert_eq!(true, lock.is_poisoned());
+    /// ```
+    pub fn is_poisoned(&self) -> bool {
+        let status = self.lock.load(Ordering::Relaxed);
+        is_poisoned(status)
+    }
 }
 
 /// RAII structure used to release the shared read access of a lock when
