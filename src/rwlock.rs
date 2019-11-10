@@ -120,6 +120,21 @@ fn count_shared_locks(s: LockStatus) -> u64 {
     ret
 }
 
+/// # Panic
+///
+/// Cause panic if the maximum count of shared locks are being holded. (maximum
+/// number is 0x3fffffffffffffff.)
+#[must_use]
+fn acquire_shared_lock(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(false, is_locked_exclusively(s));
+
+    if count_shared_locks(s) == SHARED_LOCK_MASK {
+        panic!("rwlock maximum reader count exceeded");
+    }
+
+    s + 1
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
