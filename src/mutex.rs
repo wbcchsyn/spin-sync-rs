@@ -387,21 +387,21 @@ unsafe impl<T: ?Sized + Sync> Sync for MutexGuard<'_, T> {}
 //
 // Constants to represent lock state
 //
-type LockState = u8;
-const UNLOCKED: LockState = 0;
-const LOCKED: LockState = 1;
-const POISON_UNLOCKED: LockState = 2;
-const POISON_LOCKED: LockState = 3;
-const MAX_LOCK_STATE: LockState = 3;
+type LockStatus = u8;
+const UNLOCKED: LockStatus = 0;
+const LOCKED: LockStatus = 1;
+const POISON_UNLOCKED: LockStatus = 2;
+const POISON_LOCKED: LockStatus = 3;
+const MAX_LOCK_STATE: LockStatus = 3;
 
 /// Check the status is locked or not.
-fn is_locked(s: LockState) -> bool {
+fn is_locked(s: LockStatus) -> bool {
     debug_assert!(s <= MAX_LOCK_STATE);
     (s % 2) == 1
 }
 
 /// Check the status is poisoned or not.
-fn is_poisoned(s: LockState) -> bool {
+fn is_poisoned(s: LockStatus) -> bool {
     debug_assert!(s <= MAX_LOCK_STATE);
     (s / 2) == 1
 }
