@@ -1,8 +1,9 @@
 #![feature(optin_builtin_traits)]
 
 mod mutex;
+mod result;
 mod rwlock;
 
-pub use self::mutex::{LockResult, Mutex, MutexGuard, PoisonError, TryLockError, TryLockResult};
-
-pub use self::rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+pub use crate::mutex::{Mutex, MutexGuard};
+pub use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
+pub use crate::rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
