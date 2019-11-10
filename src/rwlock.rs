@@ -46,6 +46,13 @@ pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
 
+impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
+    #[must_use]
+    fn new(rwlock: &'a RwLock<T>) -> Self {
+        Self { rwlock }
+    }
+}
+
 /// RAII structure used to release the exclusive write access of a lock when
 /// dropped.
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
