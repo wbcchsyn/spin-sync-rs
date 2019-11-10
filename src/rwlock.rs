@@ -76,6 +76,11 @@ fn is_poisoned(s: LockStatus) -> bool {
     (s & POISON_FLAG) != 0
 }
 
+#[must_use]
+fn set_poison_flag(s: LockStatus) -> LockStatus {
+    s | POISON_FLAG
+}
+
 #[cfg(test)]
 mod lock_state_tests {
     use super::*;
