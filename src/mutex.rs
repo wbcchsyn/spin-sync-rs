@@ -23,7 +23,7 @@ impl<T> Mutex<T> {
     /// Creates a new mutex in an unlocked state ready for use.
     pub fn new(t: T) -> Self {
         Mutex {
-            lock: AtomicU8::new(UNLOCKED),
+            lock: AtomicU8::new(INIT),
             data: UnsafeCell::new(t),
         }
     }
@@ -101,28 +101,11 @@ impl<T: ?Sized> Mutex<T> {
     ///    assert_eq!(NUM, *mutex.lock().unwrap());
     /// ```
     pub fn lock(&self) -> LockResult<MutexGuard<T>> {
-        // Assume this mutex is not poisoned and try to lock.
         loop {
-            match self
-                .lock
-                .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
-            {
-                UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
-                LOCKED => std::thread::yield_now(),           // locked
-                _ => break,                                   // poisoned
-            }
-        }
-
-        // This mutex is found to be poisoned.
-        // Try to lock again.
-        loop {
-            match self
-                .lock
-                .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
-            {
-                POISON_UNLOCKED => return Err(PoisonError::new(MutexGuard::new(self))),
-                POISON_LOCKED => std::thread::yield_now(),
-                _ => panic!("Bag! program should not come here."),
+            match self.do_try_lock() {
+                s if is_locked(s) => std::thread::yield_now(),
+                s if is_poisoned(s) => return Err(PoisonError::new(MutexGuard::new(self))),
+                _ => return Ok(MutexGuard::new(self)),
             }
         }
     }
@@ -184,26 +167,30 @@ impl<T: ?Sized> Mutex<T> {
     ///    assert_eq!(1, *mutex.try_lock().unwrap());
     /// ```
     pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
-        // Assume this mutex is not poisoned and try to lock.
-        match self
-            .lock
-            .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
-        {
-            UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
-            s if is_locked(s) => return Err(TryLockError::WouldBlock), // locked,
-            _ => (),                                      // poisoned
-        }
-
-        // This mutex was poisoned. Try again.
-        match self
-            .lock
-            .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
-        {
-            POISON_LOCKED => Err(TryLockError::WouldBlock),
-            POISON_UNLOCKED => Err(TryLockError::Poisoned(PoisonError::new(MutexGuard::new(
+        match self.do_try_lock() {
+            s if is_locked(s) => Err(TryLockError::WouldBlock),
+            s if is_poisoned(s) => Err(TryLockError::Poisoned(PoisonError::new(MutexGuard::new(
                 self,
             )))),
-            _ => panic!("Bag!, program should not come here."),
+            _ => Ok(MutexGuard::new(self)),
+        }
+    }
+
+    /// Try to acquire lock and return the lock status before updated.
+    fn do_try_lock(&self) -> LockStatus {
+        // Assume neither poisoned nor locked at first.
+        let mut expected = INIT;
+
+        loop {
+            let desired = acquire_lock(expected);
+            match self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire)
+            {
+                s if s == expected => return s, // Succeeded
+                s if is_locked(s) => return s,  // Another user is holding the lock.
+                s => expected = s,              // Assumption was wrong (poisoned.) try again.
+            }
         }
     }
 
@@ -335,11 +322,10 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
         let old_status = self.mutex.lock.load(Ordering::Relaxed);
         debug_assert!(is_locked(old_status));
 
-        let new_status = if is_poisoned(old_status) || std::thread::panicking() {
-            POISON_UNLOCKED
-        } else {
-            UNLOCKED
-        };
+        let mut new_status = release_lock(old_status);
+        if std::thread::panicking() {
+            new_status = set_poison_flag(new_status);
+        }
 
         self.mutex.lock.store(new_status, Ordering::Release);
     }
@@ -387,21 +373,39 @@ unsafe impl<T: ?Sized + Sync> Sync for MutexGuard<'_, T> {}
 //
 // Constants to represent lock state
 //
-type LockState = u8;
-const UNLOCKED: LockState = 0;
-const LOCKED: LockState = 1;
-const POISON_UNLOCKED: LockState = 2;
-const POISON_LOCKED: LockState = 3;
-const MAX_LOCK_STATE: LockState = 3;
+type LockStatus = u8;
 
-/// Check the status is locked or not.
-fn is_locked(s: LockState) -> bool {
-    debug_assert!(s <= MAX_LOCK_STATE);
-    (s % 2) == 1
+const INIT: LockStatus = 0;
+const LOCK_FLAG: LockStatus = 0x01;
+const POISON_FLAG: LockStatus = 0x02;
+const NOT_USED_MASK: LockStatus = 0xfc;
+
+#[must_use]
+fn is_locked(s: LockStatus) -> bool {
+    debug_assert_eq!(0, s & NOT_USED_MASK);
+    (s & LOCK_FLAG) != 0
 }
 
-/// Check the status is poisoned or not.
-fn is_poisoned(s: LockState) -> bool {
-    debug_assert!(s <= MAX_LOCK_STATE);
-    (s / 2) == 1
+#[must_use]
+fn acquire_lock(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(false, is_locked(s));
+    s | LOCK_FLAG
+}
+
+#[must_use]
+fn release_lock(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(true, is_locked(s));
+    s & !(LOCK_FLAG)
+}
+
+#[must_use]
+fn is_poisoned(s: LockStatus) -> bool {
+    debug_assert_eq!(0, s & NOT_USED_MASK);
+    (s & POISON_FLAG) != 0
+}
+
+#[must_use]
+fn set_poison_flag(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(0, s & NOT_USED_MASK);
+    s | POISON_FLAG
 }
