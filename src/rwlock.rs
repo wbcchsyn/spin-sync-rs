@@ -51,6 +51,40 @@ impl<T> RwLock<T> {
 
         Self { lock, data }
     }
+
+    /// Consumes this `RwLock`, returning the underlying data.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the RwLock is poisoned. An RwLock
+    /// is poisoned whenever a writer panics while holding an exclusive lock. An
+    /// error will only be returned if the lock would have otherwise been
+    /// acquired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
+    ///
+    /// let lock = RwLock::new(0);
+    /// {
+    ///     let mut guard = lock.write().unwrap();
+    ///     *guard += 1;
+    /// }
+    /// assert_eq!(1, lock.into_inner().unwrap());
+    /// ```
+    pub fn into_inner(self) -> LockResult<T> {
+        // We know statically that there are no outstanding references to
+        // `self` so there's no need to lock the inner lock.
+        let is_err = self.is_poisoned();
+        let data = self.data.into_inner();
+
+        if is_err {
+            Err(PoisonError::new(data))
+        } else {
+            Ok(data)
+        }
+    }
 }
 
 impl<T: ?Sized> RwLock<T> {
