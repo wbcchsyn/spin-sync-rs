@@ -41,6 +41,16 @@ pub struct RwLock<T: ?Sized> {
     data: UnsafeCell<T>,
 }
 
+impl<T> RwLock<T> {
+    #[must_use]
+    pub fn new(t: T) -> Self {
+        let lock = AtomicU64::new(INIT);
+        let data = UnsafeCell::new(t);
+
+        Self { lock, data }
+    }
+}
+
 /// RAII structure used to release the shared read access of a lock when
 /// dropped.
 ///
