@@ -98,6 +98,12 @@ fn is_locked_exclusively(s: LockStatus) -> bool {
 }
 
 #[must_use]
+fn acquire_exclusive_lock(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(false, is_locked(s));
+    s | EXCLUSIVE_LOCK_FLAG
+}
+
+#[must_use]
 fn count_shared_locks(s: LockStatus) -> u64 {
     let ret = s & SHARED_LOCK_MASK;
 
