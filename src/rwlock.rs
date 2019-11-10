@@ -212,7 +212,7 @@ impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> RwLockReadGuard<'_, T> {
+impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
     /// Make sure to release the shared read lock.
     /// This function will never poison the rwlock.
     fn drop(&mut self) {
@@ -269,7 +269,7 @@ impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> RwLockWriteGuard<'_, T> {
+impl<T: ?Sized> Drop for RwLockWriteGuard<'_, T> {
     /// Make sure to release the exclusive write lock.
     ///
     /// If this user panicked, poison the lock.
