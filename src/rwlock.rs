@@ -94,6 +94,9 @@ impl<T: ?Sized> RwLockReadGuard<'_, T> {
 
 /// RAII structure used to release the exclusive write access of a lock when
 /// dropped.
+///
+/// The data protected by the RwLock can be accessed through this guard via its
+/// Deref and DerefMut implementations.
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
