@@ -207,6 +207,24 @@ impl<T: ?Sized> Mutex<T> {
         }
     }
 
+    /// Try to acquire lock and return the lock status before updated.
+    fn do_try_lock(&self) -> LockStatus {
+        // Assume neither poisoned nor locked at first.
+        let mut expected = INIT;
+
+        loop {
+            let desired = acquire_lock(expected);
+            match self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire)
+            {
+                s if s == expected => return s, // Succeeded
+                s if is_locked(s) => return s,  // Another user is holding the lock.
+                s => expected = s,              // Assumption was wrong (poisoned.) try again.
+            }
+        }
+    }
+
     /// Determin whether the mutex is poisoned or not.
     ///
     /// # Warning
