@@ -412,6 +412,12 @@ fn acquire_lock(s: LockStatus) -> LockStatus {
 }
 
 #[must_use]
+fn release_lock(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(true, is_locked(s));
+    s & !(LOCK_FLAG)
+}
+
+#[must_use]
 fn is_poisoned(s: LockStatus) -> bool {
     debug_assert_eq!(0, s & NOT_USED_MASK);
     (s & POISON_FLAG) != 0
