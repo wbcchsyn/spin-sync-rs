@@ -397,6 +397,58 @@ fn release_shared_lock(s: LockStatus) -> LockStatus {
 }
 
 #[cfg(test)]
+mod rwlock_tests {
+    use super::*;
+
+    #[test]
+    fn try_many_times() {
+        let lock = RwLock::new(0);
+
+        // Try to write at first.
+        {
+            let mut guard0 = lock.try_write().unwrap();
+            assert_eq!(0, *guard0);
+
+            *guard0 += 1;
+            assert_eq!(1, *guard0);
+
+            let result1 = lock.try_read();
+            assert!(result1.is_err());
+
+            let result2 = lock.try_write();
+            assert!(result2.is_err());
+
+            let result3 = lock.try_read();
+            assert!(result3.is_err());
+
+            let result4 = lock.try_write();
+            assert!(result4.is_err());
+        }
+
+        // Try to read at first.
+        {
+            let guard0 = lock.try_read().unwrap();
+            assert_eq!(1, *guard0);
+
+            let result1 = lock.try_write();
+            assert!(result1.is_err());
+
+            let guard2 = lock.try_read().unwrap();
+            assert_eq!(1, *guard2);
+
+            let result3 = lock.try_write();
+            assert!(result3.is_err());
+
+            let guard4 = lock.try_read().unwrap();
+            assert_eq!(1, *guard4);
+
+            let result5 = lock.try_write();
+            assert!(result5.is_err());
+        }
+    }
+}
+
+#[cfg(test)]
 mod lock_state_tests {
     use super::*;
 
