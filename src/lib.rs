@@ -4,6 +4,6 @@ mod mutex;
 mod result;
 mod rwlock;
 
-pub use self::mutex::{LockResult, Mutex, MutexGuard, PoisonError, TryLockError, TryLockResult};
-
+pub use self::mutex::{Mutex, MutexGuard};
+pub use self::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 pub use self::rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};

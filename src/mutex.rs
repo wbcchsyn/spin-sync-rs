@@ -4,17 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU8, Ordering};
 
-/// Alias to std::sync::LockResult.
-pub type LockResult<T> = std::sync::LockResult<T>;
-
-/// Alias to std::sync::PoisonError
-pub type PoisonError<T> = std::sync::PoisonError<T>;
-
-/// Alias to std::sync::TryLockError
-pub type TryLockError<T> = std::sync::TryLockError<T>;
-
-/// Alias to std::sync::TryLockResult
-pub type TryLockResult<T> = std::sync::TryLockResult<T>;
+use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A mutual exclusion primitive useful for protecting shared data
 ///
