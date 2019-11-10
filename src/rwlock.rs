@@ -30,7 +30,13 @@ use std::sync::atomic::AtomicU64;
 /// will not be poisoned.
 ///
 pub struct RwLock<T: ?Sized> {
+    // Each bit represents as follows.
+    // - The most significant bit: poison flag
+    // - The 2nd most significant bit: exclusive write lock flag
+    // - The others: -> shared read lock count
+    // Use helper functions for lock state.
     lock: AtomicU64,
+
     data: UnsafeCell<T>,
 }
 
