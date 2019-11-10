@@ -381,6 +381,12 @@ impl<T> From<T> for RwLock<T> {
     }
 }
 
+impl<T: Default> Default for RwLock<T> {
+    fn default() -> Self {
+        RwLock::new(T::default())
+    }
+}
+
 /// RAII structure used to release the shared read access of a lock when
 /// dropped.
 ///
