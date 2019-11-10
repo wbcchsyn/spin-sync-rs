@@ -101,28 +101,11 @@ impl<T: ?Sized> Mutex<T> {
     ///    assert_eq!(NUM, *mutex.lock().unwrap());
     /// ```
     pub fn lock(&self) -> LockResult<MutexGuard<T>> {
-        // Assume this mutex is not poisoned and try to lock.
         loop {
-            match self
-                .lock
-                .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
-            {
-                UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
-                LOCKED => std::thread::yield_now(),           // locked
-                _ => break,                                   // poisoned
-            }
-        }
-
-        // This mutex is found to be poisoned.
-        // Try to lock again.
-        loop {
-            match self
-                .lock
-                .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
-            {
-                POISON_UNLOCKED => return Err(PoisonError::new(MutexGuard::new(self))),
-                POISON_LOCKED => std::thread::yield_now(),
-                _ => panic!("Bag! program should not come here."),
+            match self.do_try_lock() {
+                s if is_locked(s) => std::thread::yield_now(),
+                s if is_poisoned(s) => return Err(PoisonError::new(MutexGuard::new(self))),
+                _ => return Ok(MutexGuard::new(self)),
             }
         }
     }
