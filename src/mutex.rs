@@ -322,11 +322,10 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
         let old_status = self.mutex.lock.load(Ordering::Relaxed);
         debug_assert!(is_locked(old_status));
 
-        let new_status = if is_poisoned(old_status) || std::thread::panicking() {
-            POISON_UNLOCKED
-        } else {
-            UNLOCKED
-        };
+        let mut new_status = release_lock(old_status);
+        if std::thread::panicking() {
+            new_status = set_poison_flag(new_status);
+        }
 
         self.mutex.lock.store(new_status, Ordering::Release);
     }
