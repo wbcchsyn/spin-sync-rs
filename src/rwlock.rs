@@ -43,6 +43,9 @@ pub struct RwLock<T: ?Sized> {
 
 /// RAII structure used to release the shared read access of a lock when
 /// dropped.
+///
+/// The data protected by the RwLock can be accessed through this guard via its
+/// Deref implementation.
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
