@@ -375,6 +375,12 @@ impl<T: ?Sized> RwLock<T> {
     }
 }
 
+impl<T> From<T> for RwLock<T> {
+    fn from(t: T) -> Self {
+        RwLock::new(t)
+    }
+}
+
 /// RAII structure used to release the shared read access of a lock when
 /// dropped.
 ///
