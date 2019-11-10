@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -110,6 +110,12 @@ impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.rwlock.data.get() }
+    }
+}
+
+impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.rwlock.data.get() }
     }
 }
 
