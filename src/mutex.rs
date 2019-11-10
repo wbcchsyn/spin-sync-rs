@@ -184,26 +184,12 @@ impl<T: ?Sized> Mutex<T> {
     ///    assert_eq!(1, *mutex.try_lock().unwrap());
     /// ```
     pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
-        // Assume this mutex is not poisoned and try to lock.
-        match self
-            .lock
-            .compare_and_swap(UNLOCKED, LOCKED, Ordering::Acquire)
-        {
-            UNLOCKED => return Ok(MutexGuard::new(self)), // succeeded
-            s if is_locked(s) => return Err(TryLockError::WouldBlock), // locked,
-            _ => (),                                      // poisoned
-        }
-
-        // This mutex was poisoned. Try again.
-        match self
-            .lock
-            .compare_and_swap(POISON_UNLOCKED, POISON_LOCKED, Ordering::Acquire)
-        {
-            POISON_LOCKED => Err(TryLockError::WouldBlock),
-            POISON_UNLOCKED => Err(TryLockError::Poisoned(PoisonError::new(MutexGuard::new(
+        match self.do_try_lock() {
+            s if is_locked(s) => Err(TryLockError::WouldBlock),
+            s if is_poisoned(s) => Err(TryLockError::Poisoned(PoisonError::new(MutexGuard::new(
                 self,
             )))),
-            _ => panic!("Bag!, program should not come here."),
+            _ => Ok(MutexGuard::new(self)),
         }
     }
 
