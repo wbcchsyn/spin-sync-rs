@@ -65,6 +65,11 @@ impl<T: ?Sized> RwLock<T> {
     /// This function does not provide any guarantees with respect to the ordering
     /// of whether contentious readers or writers will acquire the lock first.
     ///
+    /// # Panics
+    ///
+    /// Cause panic if the maximum count of shared locks are being holded. (maximum
+    /// number is 0x3fffffffffffffff.)
+    ///
     /// # Errors
     ///
     /// This function will return an error if the RwLock is poisoned. An RwLock
