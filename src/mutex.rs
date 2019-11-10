@@ -21,6 +21,7 @@ pub struct Mutex<T: ?Sized> {
 
 impl<T> Mutex<T> {
     /// Creates a new mutex in an unlocked state ready for use.
+    #[inline]
     pub fn new(t: T) -> Self {
         Mutex {
             lock: AtomicU8::new(INIT),
@@ -45,6 +46,7 @@ impl<T> Mutex<T> {
     /// let mutex = Mutex::new(0);
     /// assert_eq!(0, mutex.into_inner().unwrap());
     /// ```
+    #[inline]
     pub fn into_inner(self) -> LockResult<T> {
         // There is no other references to `self` because the argument is
         // a mutable reference.
@@ -100,6 +102,7 @@ impl<T: ?Sized> Mutex<T> {
     ///
     ///    assert_eq!(NUM, *mutex.lock().unwrap());
     /// ```
+    #[inline]
     pub fn lock(&self) -> LockResult<MutexGuard<T>> {
         loop {
             match self.do_try_lock() {
@@ -166,6 +169,7 @@ impl<T: ?Sized> Mutex<T> {
     ///
     ///    assert_eq!(1, *mutex.try_lock().unwrap());
     /// ```
+    #[inline]
     pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
         match self.do_try_lock() {
             s if is_locked(s) => Err(TryLockError::WouldBlock),
@@ -177,6 +181,7 @@ impl<T: ?Sized> Mutex<T> {
     }
 
     /// Try to acquire lock and return the lock status before updated.
+    #[inline]
     fn do_try_lock(&self) -> LockStatus {
         // Assume neither poisoned nor locked at first.
         let mut expected = INIT;
@@ -225,6 +230,7 @@ impl<T: ?Sized> Mutex<T> {
     ///
     /// assert_eq!(true, mutex.is_poisoned());
     /// ```
+    #[inline]
     pub fn is_poisoned(&self) -> bool {
         // Don't acquire any lock; otherwise, this function will cause
         // a deadlock if the caller thread is holding the lock.
@@ -250,6 +256,7 @@ impl<T: ?Sized> Mutex<T> {
     /// *mutex.get_mut().unwrap() = 10;
     /// assert_eq!(10, *mutex.lock().unwrap());
     /// ```
+    #[inline]
     pub fn get_mut(&mut self) -> LockResult<&mut T> {
         // There is no other references to `self` because the argument is
         // a mutable reference.
@@ -289,12 +296,14 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
 }
 
 impl<T> From<T> for Mutex<T> {
+    #[inline]
     fn from(t: T) -> Self {
         Mutex::new(t)
     }
 }
 
 impl<T: ?Sized + Default> Default for Mutex<T> {
+    #[inline]
     fn default() -> Self {
         Mutex::new(T::default())
     }
@@ -312,12 +321,14 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
 }
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
+    #[inline]
     fn new(mutex: &'a Mutex<T>) -> Self {
         Self { mutex }
     }
 }
 
 impl<T: ?Sized> Drop for MutexGuard<'_, T> {
+    #[inline]
     fn drop(&mut self) {
         let old_status = self.mutex.lock.load(Ordering::Relaxed);
         debug_assert!(is_locked(old_status));
@@ -334,12 +345,14 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
 impl<T: ?Sized> Deref for MutexGuard<'_, T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.mutex.data.get() }
     }
 }
 
 impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.mutex.data.get() }
     }
@@ -380,30 +393,35 @@ const LOCK_FLAG: LockStatus = 0x01;
 const POISON_FLAG: LockStatus = 0x02;
 const NOT_USED_MASK: LockStatus = 0xfc;
 
+#[inline]
 #[must_use]
 fn is_locked(s: LockStatus) -> bool {
     debug_assert_eq!(0, s & NOT_USED_MASK);
     (s & LOCK_FLAG) != 0
 }
 
+#[inline]
 #[must_use]
 fn acquire_lock(s: LockStatus) -> LockStatus {
     debug_assert_eq!(false, is_locked(s));
     s | LOCK_FLAG
 }
 
+#[inline]
 #[must_use]
 fn release_lock(s: LockStatus) -> LockStatus {
     debug_assert_eq!(true, is_locked(s));
     s & !(LOCK_FLAG)
 }
 
+#[inline]
 #[must_use]
 fn is_poisoned(s: LockStatus) -> bool {
     debug_assert_eq!(0, s & NOT_USED_MASK);
     (s & POISON_FLAG) != 0
 }
 
+#[inline]
 #[must_use]
 fn set_poison_flag(s: LockStatus) -> LockStatus {
     debug_assert_eq!(0, s & NOT_USED_MASK);
