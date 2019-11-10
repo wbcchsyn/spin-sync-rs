@@ -1,4 +1,5 @@
 use std::cell::UnsafeCell;
+use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -371,6 +372,42 @@ impl<T: ?Sized> RwLock<T> {
             Err(PoisonError::new(data))
         } else {
             Ok(data)
+        }
+    }
+}
+
+impl<T> From<T> for RwLock<T> {
+    fn from(t: T) -> Self {
+        RwLock::new(t)
+    }
+}
+
+impl<T: Default> Default for RwLock<T> {
+    fn default() -> Self {
+        RwLock::new(T::default())
+    }
+}
+
+impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.try_read() {
+            Ok(guard) => f.debug_struct("RwLock").field("data", &&*guard).finish(),
+            Err(TryLockError::Poisoned(err)) => f
+                .debug_struct("RwLock")
+                .field("data", &&**err.get_ref())
+                .finish(),
+            Err(TryLockError::WouldBlock) => {
+                struct LockedPlaceholder;
+                impl fmt::Debug for LockedPlaceholder {
+                    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                        f.write_str("<locked>")
+                    }
+                }
+
+                f.debug_struct("RwLock")
+                    .field("data", &LockedPlaceholder)
+                    .finish()
+            }
         }
     }
 }
