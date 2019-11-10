@@ -552,6 +552,14 @@ impl<T: ?Sized + fmt::Display> fmt::Display for RwLockWriteGuard<'_, T> {
     }
 }
 
+impl<T: fmt::Debug> fmt::Debug for RwLockWriteGuard<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RwLockWriteGuard")
+            .field("lock", &self.rwlock)
+            .finish()
+    }
+}
+
 //
 // Marker Traits
 //
