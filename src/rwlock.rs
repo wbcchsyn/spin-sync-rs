@@ -1,4 +1,5 @@
 use std::cell::UnsafeCell;
+use std::ops::Deref;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -50,6 +51,14 @@ impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
     #[must_use]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self { rwlock }
+    }
+}
+
+impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.rwlock.data.get() }
     }
 }
 
