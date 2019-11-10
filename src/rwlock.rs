@@ -98,6 +98,13 @@ pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
 
+impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
+    #[must_use]
+    fn new(rwlock: &'a RwLock<T>) -> Self {
+        Self { rwlock }
+    }
+}
+
 //
 // Marker Traits
 //
