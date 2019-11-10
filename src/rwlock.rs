@@ -37,7 +37,7 @@ pub struct RwLock<T: ?Sized> {
     // Each bit represents as follows.
     // - The most significant bit: poison flag
     // - The 2nd most significant bit: exclusive write lock flag
-    // - The others: -> shared read lock count
+    // - The others: shared read lock count
     // Use helper functions for lock state.
     lock: AtomicU64,
 
@@ -307,7 +307,7 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
-    /// Determin whether the mutex is poisoned or not.
+    /// Determin whether the lock is poisoned or not.
     ///
     /// # Warning
     ///
@@ -330,7 +330,7 @@ impl<T: ?Sized> RwLock<T> {
     ///
     ///     let _ = thread::spawn(move || {
     ///         let _guard = lock.write().unwrap();
-    ///         panic!("Poison this mutex");
+    ///         panic!("Poison this lock");
     ///     }).join();
     /// }
     ///
