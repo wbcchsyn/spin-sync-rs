@@ -23,7 +23,7 @@ impl<T> Mutex<T> {
     /// Creates a new mutex in an unlocked state ready for use.
     pub fn new(t: T) -> Self {
         Mutex {
-            lock: AtomicU8::new(UNLOCKED),
+            lock: AtomicU8::new(INIT),
             data: UnsafeCell::new(t),
         }
     }
