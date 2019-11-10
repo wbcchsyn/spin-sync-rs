@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::mutex::{LockResult, PoisonError, TryLockError, TryLockResult};
+use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A reader-writer lock
 ///
