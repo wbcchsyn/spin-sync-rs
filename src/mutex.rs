@@ -422,3 +422,9 @@ fn is_poisoned(s: LockStatus) -> bool {
     debug_assert_eq!(0, s & NOT_USED_MASK);
     (s & POISON_FLAG) != 0
 }
+
+#[must_use]
+fn set_poison_flag(s: LockStatus) -> LockStatus {
+    debug_assert_eq!(0, s & NOT_USED_MASK);
+    s | POISON_FLAG
+}
