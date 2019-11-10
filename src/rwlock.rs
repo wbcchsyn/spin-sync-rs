@@ -1,6 +1,6 @@
 use std::cell::UnsafeCell;
 use std::panic::{RefUnwindSafe, UnwindSafe};
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// A reader-writer lock
 ///
@@ -50,6 +50,33 @@ impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
     #[must_use]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self { rwlock }
+    }
+}
+
+impl<T: ?Sized> RwLockReadGuard<'_, T> {
+    /// Make sure to release the shared read lock.
+    /// This function will never poison the rwlock.
+    fn drop(&mut self) {
+        // Assume not poisoned and no other user is holding the lock at first.
+        let mut expected = acquire_shared_lock(INIT);
+
+        loop {
+            let desired = release_shared_lock(expected);
+            let current = self
+                .rwlock
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Release);
+
+            // Succeeded to release the lock.
+            if current == expected {
+                return;
+            }
+
+            // - Assumption was wrong.
+            // - Another user release the lock at the same time.
+            // Try again.
+            expected = current;
+        }
     }
 }
 
