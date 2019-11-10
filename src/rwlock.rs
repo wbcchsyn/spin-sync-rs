@@ -60,3 +60,8 @@ impl<T: ?Sized> !Send for RwLockReadGuard<'_, T> {}
 
 unsafe impl<T: ?Sized + Sync> Sync for RwLockWriteGuard<'_, T> {}
 impl<T: ?Sized> !Send for RwLockWriteGuard<'_, T> {}
+
+//
+// Helpers for Lock State
+//
+type LockStatus = u64;
