@@ -466,6 +466,12 @@ impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
     }
 }
 
+impl<T: ?Sized + fmt::Display> fmt::Display for RwLockReadGuard<'_, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
 /// RAII structure used to release the exclusive write access of a lock when
 /// dropped.
 ///
