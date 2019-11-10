@@ -1,5 +1,5 @@
 use std::cell::UnsafeCell;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -94,8 +94,64 @@ impl<T: ?Sized> RwLockReadGuard<'_, T> {
 
 /// RAII structure used to release the exclusive write access of a lock when
 /// dropped.
+///
+/// The data protected by the RwLock can be accessed through this guard via its
+/// Deref and DerefMut implementations.
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
+}
+
+impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
+    #[must_use]
+    fn new(rwlock: &'a RwLock<T>) -> Self {
+        Self { rwlock }
+    }
+}
+
+impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.rwlock.data.get() }
+    }
+}
+
+impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.rwlock.data.get() }
+    }
+}
+
+impl<T: ?Sized> RwLockWriteGuard<'_, T> {
+    /// Make sure to release the exclusive write lock.
+    ///
+    /// If this user panicked, poison the lock.
+    fn drop(&mut self) {
+        let is_poisoned = std::thread::panicking();
+
+        // Assume the rwlock was not poisoned at first.
+        let mut expected = acquire_exclusive_lock(INIT);
+
+        loop {
+            let mut desired = release_exclusive_lock(expected);
+            if is_poisoned {
+                desired = set_poison_flag(desired);
+            }
+
+            let current = self
+                .rwlock
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Release);
+
+            // Succeeded to release the lock.
+            if current == expected {
+                return;
+            }
+
+            // Assumption was wrong (The rwlock was already poisoned.)
+            expected = current;
+        }
+    }
 }
 
 //
