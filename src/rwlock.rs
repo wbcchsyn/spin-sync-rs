@@ -330,6 +330,39 @@ impl<T: ?Sized> RwLock<T> {
             }
         }
     }
+
+    /// Try to acquire lock and return the lock status before updated.
+    fn try_lock<AcqFn, LockCheckFn>(&self, acq_fn: AcqFn, lock_check_fn: LockCheckFn) -> LockStatus
+    where
+        AcqFn: Fn(LockStatus) -> LockStatus,
+        LockCheckFn: Fn(LockStatus) -> bool,
+    {
+        // Assume not poisoned, no user is holding the lock at first.
+        let mut expected = INIT;
+
+        loop {
+            // Try to acquire the lock.
+            let desired = acq_fn(expected);
+            let current = self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire);
+
+            // Succeeded.
+            if current == expected {
+                return current;
+            }
+
+            // Locked.
+            if lock_check_fn(current) {
+                return current;
+            }
+
+            // - The first assumption was wrong.
+            // - Another user changes the lock status at the same time.
+            // Try again soon.
+            expected = current;
+        }
+    }
 }
 
 /// RAII structure used to release the shared read access of a lock when
