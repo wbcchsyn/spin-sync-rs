@@ -119,6 +119,73 @@ impl<T: ?Sized> RwLock<T> {
             expected = current;
         }
     }
+
+    /// Attempts to lock this rwlock with exclusive write access.
+    ///
+    /// If the lock could not be acquired at this time, then `Err` is returned.
+    /// Otherwise, an RAII guard is returned which will release the lock when
+    /// it is dropped.
+    ///
+    /// This function does not block.
+    ///
+    /// This function does not provide any guarantees with respect to the ordering
+    /// of whether contentious readers or writers will acquire the lock first.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the RwLock is poisoned. An RwLock
+    /// is poisoned whenever a writer panics while holding an exclusive lock. An
+    /// error will only be returned if the lock would have otherwise been
+    /// acquired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
+    ///
+    /// let lock = RwLock::new(1);
+    ///
+    /// let mut guard = lock.try_write().unwrap();
+    /// assert_eq!(1, *guard);
+    ///
+    /// *guard += 1;
+    /// assert_eq!(2, *guard);
+    ///
+    /// assert!(lock.try_write().is_err());
+    /// assert!(lock.try_read().is_err());
+    /// ```
+    pub fn try_write(&self) -> TryLockResult<RwLockWriteGuard<T>> {
+        // Assume not poisoned, no user is holding the lock at first.
+        let mut expected = INIT;
+
+        loop {
+            // Try to acquire the lock.
+            let desired = acquire_exclusive_lock(expected);
+            let current = self
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Acquire);
+
+            // Succeeded.
+            if current == expected {
+                let guard = RwLockWriteGuard::new(self);
+
+                if is_poisoned(current) {
+                    return Err(TryLockError::Poisoned(PoisonError::new(guard)));
+                } else {
+                    return Ok(guard);
+                }
+            }
+
+            // Failed because another user is holding the lock.
+            if is_locked(current) {
+                return Err(TryLockError::WouldBlock);
+            }
+
+            // Assumption was wrong (This rwlock is poisoned.)
+            // Try again.
+            expected = current;
+        }
+    }
 }
 
 /// RAII structure used to release the shared read access of a lock when
