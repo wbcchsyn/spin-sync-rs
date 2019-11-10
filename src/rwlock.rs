@@ -299,6 +299,38 @@ impl<T: ?Sized> RwLock<T> {
         let status = self.lock.load(Ordering::Relaxed);
         is_poisoned(status)
     }
+
+    /// Returns a mutable reference to the underlying data.
+    ///
+    /// Since this call borrows the `RwLock` mutably, no actual locking needs to
+    /// take place -- the mutable borrow statically guarantees no locks exist.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the RwLock is poisoned. An RwLock
+    /// is poisoned whenever a writer panics while holding an exclusive lock. An
+    /// error will only be returned if the lock would have otherwise been
+    /// acquired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
+    ///
+    /// let mut lock = RwLock::new(0);
+    /// *lock.get_mut().unwrap() = 10;
+    /// assert_eq!(*lock.read().unwrap(), 10);
+    /// ```
+    pub fn get_mut(&mut self) -> LockResult<&mut T> {
+        // We know statically that there are no other references to `self`, so
+        // there's no need to lock the inner lock.
+        let data = unsafe { &mut *self.data.get() };
+        if self.is_poisoned() {
+            Err(PoisonError::new(data))
+        } else {
+            Ok(data)
+        }
+    }
 }
 
 /// RAII structure used to release the shared read access of a lock when
