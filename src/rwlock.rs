@@ -105,6 +105,38 @@ impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
     }
 }
 
+impl<T: ?Sized> RwLockWriteGuard<'_, T> {
+    /// Make sure to release the exclusive write lock.
+    ///
+    /// If this user panicked, poison the lock.
+    fn drop(&mut self) {
+        let is_poisoned = std::thread::panicking();
+
+        // Assume the rwlock was not poisoned at first.
+        let mut expected = acquire_exclusive_lock(INIT);
+
+        loop {
+            let mut desired = release_exclusive_lock(expected);
+            if is_poisoned {
+                desired = set_poison_flag(desired);
+            }
+
+            let current = self
+                .rwlock
+                .lock
+                .compare_and_swap(expected, desired, Ordering::Release);
+
+            // Succeeded to release the lock.
+            if current == expected {
+                return;
+            }
+
+            // Assumption was wrong (The rwlock was already poisoned.)
+            expected = current;
+        }
+    }
+}
+
 //
 // Marker Traits
 //
