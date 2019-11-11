@@ -10,6 +10,8 @@ The interface resembles std::sync.
 rust nightly version is required so far.
 """
 
+keywords = ["spin", "lock", "sync", "mutex", "rwlock"]
+
 license = "MIT"
 
 repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
