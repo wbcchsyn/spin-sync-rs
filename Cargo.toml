@@ -12,6 +12,7 @@ rust nightly version is required so far.
 
 readme = "README.md"
 keywords = ["spin", "lock", "sync", "mutex", "rwlock"]
+documentation = "https://wbcchsyn.github.io/spin-sync-rs/index.html"
 
 license = "MIT"
 
