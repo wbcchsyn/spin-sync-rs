@@ -18,5 +18,6 @@ repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
 
 [badges]
 circle-ci = { repository = "https://circleci.com/gh/wbcchsyn/spin-sync-rs" }
+travis-ci = { repository = "wbcchsyn/spin-sync-rs" }
 
 [dependencies]
