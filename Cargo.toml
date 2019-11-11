@@ -10,6 +10,7 @@ The interface resembles std::sync.
 rust nightly version is required so far.
 """
 
+readme = "README.md"
 keywords = ["spin", "lock", "sync", "mutex", "rwlock"]
 
 license = "MIT"
