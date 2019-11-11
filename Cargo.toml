@@ -4,10 +4,21 @@ version = "0.0.1"
 authors = ["Yoshida Shin <wbcchsyn@gmail.com>"]
 edition = "2018"
 
-description = "Synchronization primitives using spinlock. The interface resembles std::sync."
+description = """
+Synchronization primitives using spinlock.
+The interface resembles std::sync.
+rust nightly version is required so far.
+"""
+
+readme = "README.md"
+keywords = ["spin", "lock", "sync", "mutex", "rwlock"]
 
 license = "MIT"
 
 repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
+
+[badges]
+circle-ci = { repository = "https://circleci.com/gh/wbcchsyn/spin-sync-rs" }
+travis-ci = { repository = "wbcchsyn/spin-sync-rs" }
 
 [dependencies]

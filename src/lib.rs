@@ -1,4 +1,6 @@
 #![feature(optin_builtin_traits)]
+#![feature(external_doc)]
+#![doc(include = "../README.md")]
 
 mod mutex;
 mod result;
