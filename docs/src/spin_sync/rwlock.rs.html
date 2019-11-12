@@ -722,6 +722,109 @@
 <span id="722">722</span>
 <span id="723">723</span>
 <span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+<span id="734">734</span>
+<span id="735">735</span>
+<span id="736">736</span>
+<span id="737">737</span>
+<span id="738">738</span>
+<span id="739">739</span>
+<span id="740">740</span>
+<span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+<span id="754">754</span>
+<span id="755">755</span>
+<span id="756">756</span>
+<span id="757">757</span>
+<span id="758">758</span>
+<span id="759">759</span>
+<span id="760">760</span>
+<span id="761">761</span>
+<span id="762">762</span>
+<span id="763">763</span>
+<span id="764">764</span>
+<span id="765">765</span>
+<span id="766">766</span>
+<span id="767">767</span>
+<span id="768">768</span>
+<span id="769">769</span>
+<span id="770">770</span>
+<span id="771">771</span>
+<span id="772">772</span>
+<span id="773">773</span>
+<span id="774">774</span>
+<span id="775">775</span>
+<span id="776">776</span>
+<span id="777">777</span>
+<span id="778">778</span>
+<span id="779">779</span>
+<span id="780">780</span>
+<span id="781">781</span>
+<span id="782">782</span>
+<span id="783">783</span>
+<span id="784">784</span>
+<span id="785">785</span>
+<span id="786">786</span>
+<span id="787">787</span>
+<span id="788">788</span>
+<span id="789">789</span>
+<span id="790">790</span>
+<span id="791">791</span>
+<span id="792">792</span>
+<span id="793">793</span>
+<span id="794">794</span>
+<span id="795">795</span>
+<span id="796">796</span>
+<span id="797">797</span>
+<span id="798">798</span>
+<span id="799">799</span>
+<span id="800">800</span>
+<span id="801">801</span>
+<span id="802">802</span>
+<span id="803">803</span>
+<span id="804">804</span>
+<span id="805">805</span>
+<span id="806">806</span>
+<span id="807">807</span>
+<span id="808">808</span>
+<span id="809">809</span>
+<span id="810">810</span>
+<span id="811">811</span>
+<span id="812">812</span>
+<span id="813">813</span>
+<span id="814">814</span>
+<span id="815">815</span>
+<span id="816">816</span>
+<span id="817">817</span>
+<span id="818">818</span>
+<span id="819">819</span>
+<span id="820">820</span>
+<span id="821">821</span>
+<span id="822">822</span>
+<span id="823">823</span>
+<span id="824">824</span>
+<span id="825">825</span>
+<span id="826">826</span>
+<span id="827">827</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">UnsafeCell</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
@@ -731,33 +834,80 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">result</span>::{<span class="ident">LockResult</span>, <span class="ident">PoisonError</span>, <span class="ident">TryLockError</span>, <span class="ident">TryLockResult</span>};
 
-<span class="doccomment">/// A reader-writer lock</span>
+<span class="doccomment">/// A reader-writer lock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// This type of lock allows a number of readers or at most one writer at any</span>
-<span class="doccomment">/// point in time. The write portion of this lock typically allows modification</span>
-<span class="doccomment">/// of the underlying data (exclusive access) and the read portion of this lock</span>
-<span class="doccomment">/// typically allows for read-only access (shared access).</span>
+<span class="doccomment">/// It behaves like std::sync::RwLock except for using spinlock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// In comparison, a Mutex does not distinguish between readers or writers</span>
-<span class="doccomment">/// that acquire the lock, therefore blocking any threads waiting for the lock to</span>
-<span class="doccomment">/// become available. An `RwLock` will allow any number of readers to acquire the</span>
-<span class="doccomment">/// lock as long as a writer is not holding the lock.</span>
+<span class="doccomment">/// This type of lock allows either a number of readers or at most one writer</span>
+<span class="doccomment">/// at the same time. Readers are allowed read-only access (shared access)</span>
+<span class="doccomment">/// to the underlying data while the writer is allowed read/write access</span>
+<span class="doccomment">/// (exclusive access.)</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The priority policy of the lock is dependent on the underlying operating</span>
-<span class="doccomment">/// system&#39;s implementation, and this type does not guarantee that any</span>
-<span class="doccomment">/// particular policy will be used.</span>
+<span class="doccomment">/// In comparison, a [`Mutex`] does not distinguish between readers and writers,</span>
+<span class="doccomment">/// therefore blocking any threads waiting for the lock to become available.</span>
+<span class="doccomment">/// An `RwLock` will allow any number of readers to acquire the lock as long as</span>
+<span class="doccomment">/// a writer is not holding the lock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The type parameter `T` represents the data that this lock protects. It is</span>
-<span class="doccomment">/// required that `T` satisfies Send to be shared across threads and</span>
-<span class="doccomment">/// Sync to allow concurrent access through readers.</span>
+<span class="doccomment">/// There is no priority difference with respect to the ordering of</span>
+<span class="doccomment">/// whether contentious readers or writers will acquire the lock first.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Poisoning</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// An `RwLock`, like `Mutex`, will become poisoned on a panic. Note, however,</span>
+<span class="doccomment">/// An `RwLock`, like [`Mutex`], will become poisoned on a panic. Note, however,</span>
 <span class="doccomment">/// that an `RwLock` may only be poisoned if a panic occurs while it is locked</span>
 <span class="doccomment">/// exclusively (write mode). If a panic occurs in any reader, then the lock</span>
 <span class="doccomment">/// will not be poisoned.</span>
 <span class="doccomment">///</span>
+<span class="doccomment">/// [`Mutex`]: struct.Mutex.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Examples</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Create a variable protected by a RwLock, increment it by 2 in worker threads</span>
+<span class="doccomment">/// at the same time, and check the variable was updated rightly.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use spin_sync::RwLock;</span>
+<span class="doccomment">/// use std::sync::Arc;</span>
+<span class="doccomment">/// use std::thread;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// const WORKER_NUM: usize = 10;</span>
+<span class="doccomment">/// let mut handles = Vec::with_capacity(WORKER_NUM);</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Decrare a variable protected by RwLock.</span>
+<span class="doccomment">/// // It is wrapped in std::Arc to share this instance itself among threads.</span>
+<span class="doccomment">/// let rwlock = Arc::new(RwLock::new(0));</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Create worker threads to inclement the value by 2.</span>
+<span class="doccomment">/// for _ in 0..WORKER_NUM {</span>
+<span class="doccomment">///     let c_rwlock = rwlock.clone();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     let handle = thread::spawn(move || {</span>
+<span class="doccomment">///         let mut num = c_rwlock.write().unwrap();</span>
+<span class="doccomment">///         *num += 2;</span>
+<span class="doccomment">///     });</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     handles.push(handle);</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Make sure the value is always multipile of 2 even if some worker threads</span>
+<span class="doccomment">/// // are working.</span>
+<span class="doccomment">/// //</span>
+<span class="doccomment">/// // Enclosing the lock with `{}` to drop it before waiting for the worker</span>
+<span class="doccomment">/// // threads; otherwise, deadlocks could be occurred.</span>
+<span class="doccomment">/// {</span>
+<span class="doccomment">///     let num = rwlock.read().unwrap();</span>
+<span class="doccomment">///     assert_eq!(0, *num % 2);</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Wait for the all worker threads are finished.</span>
+<span class="doccomment">/// for handle in handles {</span>
+<span class="doccomment">///     handle.join().unwrap();</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Make sure the value is incremented by 2 times the worker count.</span>
+<span class="doccomment">/// let num = rwlock.read().unwrap();</span>
+<span class="doccomment">/// assert_eq!(2 * WORKER_NUM, *num);</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> {
     <span class="comment">// Each bit represents as follows.</span>
     <span class="comment">// - The most significant bit: poison flag</span>
@@ -770,6 +920,15 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Creates a new instance in unlocked state ready for use.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Examples</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use std::sync::RwLock;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let lock = RwLock::new(5);</span>
+    <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
@@ -779,26 +938,23 @@
         <span class="self">Self</span> { <span class="ident">lock</span>, <span class="ident">data</span> }
     }
 
-    <span class="doccomment">/// Consumes this `RwLock`, returning the underlying data.</span>
+    <span class="doccomment">/// Consumes this instance and returns the underlying data.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Note that this method won&#39;t acquire any lock because we know there is</span>
+    <span class="doccomment">/// no other references to `self`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock. An</span>
-    <span class="doccomment">/// error will only be returned if the lock would have otherwise been</span>
-    <span class="doccomment">/// acquired.</span>
+    <span class="doccomment">/// If another user panicked while holding the exclusive write lock of this instance,</span>
+    <span class="doccomment">/// this method call wraps the guard in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use spin_sync::RwLock;</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// let lock = RwLock::new(0);</span>
-    <span class="doccomment">/// {</span>
-    <span class="doccomment">///     let mut guard = lock.write().unwrap();</span>
-    <span class="doccomment">///     *guard += 1;</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// assert_eq!(1, lock.into_inner().unwrap());</span>
+    <span class="doccomment">/// let rwlock = RwLock::new(0);</span>
+    <span class="doccomment">/// assert_eq!(0, rwlock.into_inner().unwrap());</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LockResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
@@ -816,37 +972,39 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Locks this rwlock with shared read access, blocking the current thread</span>
-    <span class="doccomment">/// until it can be acquired.</span>
+    <span class="doccomment">/// The maximum shared read locks of each instance.</span>
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MAX_READ_LOCK_COUNT</span>: <span class="ident">u64</span> <span class="op">=</span> <span class="ident">SHARED_LOCK_MASK</span>;
+
+    <span class="doccomment">/// Blocks the current thread until acquiring a shared read lock, and</span>
+    <span class="doccomment">/// returns an RAII guard object.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The calling thread will be blocked until there are no more writers which</span>
-    <span class="doccomment">/// hold the lock. There may be other readers currently inside the lock when</span>
-    <span class="doccomment">/// this method returns. This method does not provide any guarantees with</span>
-    <span class="doccomment">/// respect to the ordering of whether contentious readers or writers will</span>
-    <span class="doccomment">/// acquire the lock first.</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an RAII guard which will release this thread&#39;s shared access</span>
-    <span class="doccomment">/// once it is dropped.</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Blocks until this thread acquires a shared read lock</span>
+    <span class="doccomment">///       (i.e. until the exclusive write lock is held.)</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wrapps the guard in `Result` and returns it. If this instance has been</span>
+    <span class="doccomment">///       poisoned, it is wrapped in an `Err`; otherwise wrapped in an `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data to read through the guard.</span>
+    <span class="doccomment">///    (No write access is then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock.</span>
-    <span class="doccomment">/// The failure will occur immediately after the lock has been acquired.</span>
+    <span class="doccomment">/// If another user panicked while holding the exclusive write lock of this instance,</span>
+    <span class="doccomment">/// this method call wraps the guard in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Panics</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Cause panic if the maximum count of shared locks are being holded. (maximum</span>
-    <span class="doccomment">/// number is 0x3fffffffffffffff.)</span>
+    <span class="doccomment">/// This method panics if `MAX_READ_LOCK_COUNT` shared locks are.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use std::sync::Arc;</span>
-    <span class="doccomment">/// use std::thread;</span>
     <span class="doccomment">/// use spin_sync::RwLock;</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// let lock = Arc::new(RwLock::new(1));</span>
+    <span class="doccomment">/// let lock = RwLock::new(1);</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// let guard1 = lock.read().unwrap();</span>
     <span class="doccomment">/// assert_eq!(1, *guard1);</span>
@@ -865,28 +1023,41 @@
         }
     }
 
-    <span class="doccomment">/// Attempts to acquire this rwlock with shared read access.</span>
+    <span class="doccomment">/// Attempts to acquire a shared read lock and returns an RAII guard object if succeeded.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If the access could not be granted at this time, then `Err` is returned.</span>
-    <span class="doccomment">/// Otherwise, an RAII guard is returned which will release the shared access</span>
-    <span class="doccomment">/// when it is dropped.</span>
+    <span class="doccomment">/// Behaves like [`read`] except for this method returns an error immediately</span>
+    <span class="doccomment">/// if the exclusive write lock is being held.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This function does not block.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function does not provide any guarantees with respect to the ordering</span>
-    <span class="doccomment">/// of whether contentious readers or writers will acquire the lock first.</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Tries to acquire a shared read lock. If failed (i.e. if the exclusive write</span>
+    <span class="doccomment">///       lock is being held,) returns an error immediately and this flow is finished here.</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wrapps the guard in `Result` and returns it. If this instance has been poisoned,</span>
+    <span class="doccomment">///       it is wrapped in an `Err`; otherwise wrapped in an `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data to read through the guard.</span>
+    <span class="doccomment">///    (No write access is at then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`read`]: #method.read</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Panics</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Cause panic if the maximum count of shared locks are being holded. (maximum</span>
-    <span class="doccomment">/// number is 0x3fffffffffffffff.)</span>
+    <span class="doccomment">/// This method panics if `MAX_READ_LOCK` shared read locks are.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock. An</span>
-    <span class="doccomment">/// error will only be returned if the lock would have otherwise been</span>
-    <span class="doccomment">/// acquired.</span>
+    <span class="doccomment">/// - If another user is holding the exclusive write lock,</span>
+    <span class="doccomment">///   [`TryLockError::WouldBlock`] is returned.</span>
+    <span class="doccomment">/// - If this method call succeeded to acquire a shared read lock, and if another</span>
+    <span class="doccomment">///   user had panicked while holding the exclusive write lock,</span>
+    <span class="doccomment">///   [`TryLockError::Poisoned`] is returned.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`TryLockError::WouldBlock`]: type.TryLockError.html</span>
+    <span class="doccomment">/// [`TryLockError::Poisoned`]: type.TryLockError.html</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -912,23 +1083,37 @@
         }
     }
 
-    <span class="doccomment">/// Attempts to lock this rwlock with exclusive write access.</span>
+    <span class="doccomment">/// Attempts to acquire the exclusive write lock and returns an RAII guard object</span>
+    <span class="doccomment">/// if succeeded.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If the lock could not be acquired at this time, then `Err` is returned.</span>
-    <span class="doccomment">/// Otherwise, an RAII guard is returned which will release the lock when</span>
-    <span class="doccomment">/// it is dropped.</span>
+    <span class="doccomment">/// Behaves like [`write`] except for this method returns an error immediately</span>
+    <span class="doccomment">/// if any other lock (either read lock or write lock) is being held.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function does not block.</span>
+    <span class="doccomment">/// This method does not block.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function does not provide any guarantees with respect to the ordering</span>
-    <span class="doccomment">/// of whether contentious readers or writers will acquire the lock first.</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Tries to acquire the exclusive write lock. If failed (i.e. if any other lock is</span>
+    <span class="doccomment">///       being held,) returns an error immediately and this flow is finished here.</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wraps the guard in `Result` and returns it. If this instance has been poisoned,</span>
+    <span class="doccomment">///       it is wrapped in an `Err`; otherwise wrapped in an `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data to read/write through the guard.</span>
+    <span class="doccomment">///    (No other access is then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`write`]: #method.write</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock. An</span>
-    <span class="doccomment">/// error will only be returned if the lock would have otherwise been</span>
-    <span class="doccomment">/// acquired.</span>
+    <span class="doccomment">/// - If another user is holding any other lock (either read lock or write lock),</span>
+    <span class="doccomment">///   [`TryLockError::WouldBlock`] is returned.</span>
+    <span class="doccomment">/// - If this method call succeeded to acquire the lock, and if another user had panicked</span>
+    <span class="doccomment">///   while holding the exclusive write lock, [`TryLockError::Poisoned`] is returned.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`TryLockError::WouldBlock`]: type.TryLockError.html</span>
+    <span class="doccomment">/// [`TryLockError::Poisoned`]: type.TryLockError.html</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -957,36 +1142,41 @@
         }
     }
 
-    <span class="doccomment">/// Locks this rwlock with exclusive write access, blocking the current</span>
-    <span class="doccomment">/// thread until it can be acquired.</span>
+    <span class="doccomment">/// Blocks the current thread until acquiring the exclusive write lock, and</span>
+    <span class="doccomment">/// returns an RAII guard object.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will not return while other writers or other readers</span>
-    <span class="doccomment">/// currently have access to the lock.</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns an RAII guard which will drop the write access of this rwlock</span>
-    <span class="doccomment">/// when dropped.</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Blocks until this thread acquires the exclusive write lock</span>
+    <span class="doccomment">///       (i.e. until any other lock is held.)</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wrapps the guard in Result and returns it. If this instance has been</span>
+    <span class="doccomment">///       poisoned, it is wrapped in an `Err`; otherwise wrapped in an `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data to read/write through the guard.</span>
+    <span class="doccomment">///    (No other access is then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock.</span>
-    <span class="doccomment">/// An error will be returned when the lock is acquired.</span>
+    <span class="doccomment">/// If another user panicked while holding the exclusive write lock of this instance,</span>
+    <span class="doccomment">/// this method call wraps the guard in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
     <span class="doccomment">/// use spin_sync::RwLock;</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// let lock = RwLock::new(1);</span>
+    <span class="doccomment">/// let lock = RwLock::new(0);</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// let mut guard = lock.write().unwrap();</span>
-    <span class="doccomment">/// assert_eq!(1, *guard);</span>
+    <span class="doccomment">/// assert_eq!(0, *guard);</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// *guard += 1;</span>
-    <span class="doccomment">/// assert_eq!(2, *guard);</span>
+    <span class="doccomment">/// assert_eq!(1, *guard);</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// assert!(lock.try_read().is_err());</span>
-    <span class="doccomment">/// assert!(lock.try_write().is_err());</span>
+    <span class="doccomment">/// assert_eq!(true, lock.try_read().is_err());</span>
+    <span class="doccomment">/// assert_eq!(true, lock.try_write().is_err());</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LockResult</span><span class="op">&lt;</span><span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span>, <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
@@ -1032,11 +1222,11 @@
         }
     }
 
-    <span class="doccomment">/// Determin whether the lock is poisoned or not.</span>
+    <span class="doccomment">/// Determines whether the lock is poisoned or not.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Warning</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function won&#39;t acquire this lock. If another thread is active,</span>
+    <span class="doccomment">/// This function won&#39;t acquire any lock. If another thread is active,</span>
     <span class="doccomment">/// the rwlock can become poisoned at any time. You should not trust a `false`</span>
     <span class="doccomment">/// value for program correctness without additional synchronization.</span>
     <span class="doccomment">///</span>
@@ -1054,8 +1244,10 @@
     <span class="doccomment">///     let lock = lock.clone();</span>
     <span class="doccomment">///</span>
     <span class="doccomment">///     let _ = thread::spawn(move || {</span>
+    <span class="doccomment">///         // This panic while holding the lock (`_guard` is in scope) will poison</span>
+    <span class="doccomment">///         // the instance.</span>
     <span class="doccomment">///         let _guard = lock.write().unwrap();</span>
-    <span class="doccomment">///         panic!(&quot;Poison this lock&quot;);</span>
+    <span class="doccomment">///         panic!(&quot;Poison here&quot;);</span>
     <span class="doccomment">///     }).join();</span>
     <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
@@ -1069,15 +1261,13 @@
 
     <span class="doccomment">/// Returns a mutable reference to the underlying data.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Since this call borrows the `RwLock` mutably, no actual locking needs to</span>
-    <span class="doccomment">/// take place -- the mutable borrow statically guarantees no locks exist.</span>
+    <span class="doccomment">/// Note that this method won&#39;t acquire any lock because we know there is</span>
+    <span class="doccomment">/// no other references to `self`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will return an error if the RwLock is poisoned. An RwLock</span>
-    <span class="doccomment">/// is poisoned whenever a writer panics while holding an exclusive lock. An</span>
-    <span class="doccomment">/// error will only be returned if the lock would have otherwise been</span>
-    <span class="doccomment">/// acquired.</span>
+    <span class="doccomment">/// If another user panicked while holding the exclusive write lock of this instance,</span>
+    <span class="doccomment">/// this method call wraps the guard in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -1137,11 +1327,19 @@
     }
 }
 
-<span class="doccomment">/// RAII structure used to release the shared read access of a lock when</span>
-<span class="doccomment">/// dropped.</span>
+<span class="doccomment">/// An RAII implementation of a &quot;scoped shared read lock&quot; of a RwLock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The data protected by the RwLock can be accessed through this guard via its</span>
-<span class="doccomment">/// Deref implementation.</span>
+<span class="doccomment">/// When this instance is dropped (falls out of scope), the lock will be released.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The data protected by the RwLock can be accessed to read</span>
+<span class="doccomment">/// through this guard via its `Deref` implementation.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This instance is created by [`read`] and [`try_read`] methods on</span>
+<span class="doccomment">/// [`RwLock`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`read`]: struct.RwLock.html#method.read</span>
+<span class="doccomment">/// [`try_read`]: struct.RwLock.html#method.try_read</span>
+<span class="doccomment">/// [`RwLock`]: struct.RwLock.html</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
@@ -1205,11 +1403,19 @@
     }
 }
 
-<span class="doccomment">/// RAII structure used to release the exclusive write access of a lock when</span>
-<span class="doccomment">/// dropped.</span>
+<span class="doccomment">/// An RAII implementation of a &quot;scoped exclusive write lock&quot; of a RwLock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The data protected by the RwLock can be accessed through this guard via its</span>
-<span class="doccomment">/// Deref and DerefMut implementations.</span>
+<span class="doccomment">/// When this instance is dropped (falls out of scope), the lock will be released.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The data protected by the RwLock can be accessed to read/write</span>
+<span class="doccomment">/// through this guard via its `Deref` and `DerefMut` implementation.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This instance is created by [`write`] and [`try_write`] methods on</span>
+<span class="doccomment">/// [`RwLock`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`write`]: struct.RwLock.html#method.write</span>
+<span class="doccomment">/// [`try_write`]: struct.RwLock.html#method.try_write</span>
+<span class="doccomment">/// [`RwLock`]: struct.RwLock.html</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }

@@ -427,6 +427,108 @@
 <span id="427">427</span>
 <span id="428">428</span>
 <span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">UnsafeCell</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
@@ -436,14 +538,110 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">result</span>::{<span class="ident">LockResult</span>, <span class="ident">PoisonError</span>, <span class="ident">TryLockError</span>, <span class="ident">TryLockResult</span>};
 
-<span class="doccomment">/// A mutual exclusion primitive useful for protecting shared data</span>
+<span class="doccomment">/// A mutual exclusion primitive useful for protecting shared data.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The interface resembles that of std::sync::Mutex.</span>
+<span class="doccomment">/// It behaves like std::sync::Mutex except for using spinlock.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// The behavior is similar to std::sync::Mutex except for using spinlock.</span>
-<span class="doccomment">/// i.e. This mutex will block threads waiting for the lock to become available.</span>
-<span class="doccomment">/// Each mutex has a type parameter which represents the data that it is</span>
-<span class="doccomment">/// protecting.</span>
+<span class="doccomment">/// This mutex will block threads waiting for the lock to become available. The</span>
+<span class="doccomment">/// mutex can also be statically initialized or created via a [`new`]</span>
+<span class="doccomment">/// constructor. Each mutex has a type parameter which represents the data that</span>
+<span class="doccomment">/// it is protecting. The data can only be accessed through the RAII guards</span>
+<span class="doccomment">/// returned from [`lock`] and [`try_lock`], which guarantees that the data is only</span>
+<span class="doccomment">/// ever accessed when the mutex is locked.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Poisoning</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The mutexes in this module implement a strategy called &quot;poisoning&quot; where a</span>
+<span class="doccomment">/// mutex is considered poisoned whenever a thread panics while holding the</span>
+<span class="doccomment">/// mutex. Once a mutex is poisoned, all other threads are unable to access the</span>
+<span class="doccomment">/// data by default as it is likely tainted.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// For a mutex, this means that the [`lock`] and [`try_lock`] methods return a</span>
+<span class="doccomment">/// `Result` which indicates whether a mutex has been poisoned or not. Most</span>
+<span class="doccomment">/// usage of a mutex will simply `unwrap()` these results, propagating panics</span>
+<span class="doccomment">/// among threads to ensure that a possibly invalid invariant is not witnessed.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// A poisoned mutex, however, does not prevent all access to the underlying</span>
+<span class="doccomment">/// data. The [`PoisonError`] type has an `into_inner` method which will return</span>
+<span class="doccomment">/// the guard that would have otherwise been returned on a successful lock. This</span>
+<span class="doccomment">/// allows access to the data, despite the lock being poisoned.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`new`]: #method.new</span>
+<span class="doccomment">/// [`lock`]: #method.lock</span>
+<span class="doccomment">/// [`try_lock`]: #method.try_lock</span>
+<span class="doccomment">/// [`PoisonError`]: type.PoisonError.html</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Examples</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// Protect a variable (non-atomically) and update it in worker threads.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use spin_sync::Mutex;</span>
+<span class="doccomment">/// use std::sync::Arc;</span>
+<span class="doccomment">/// use std::thread;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// const WORKER_NUM: usize = 10;</span>
+<span class="doccomment">/// let mut handles = Vec::with_capacity(WORKER_NUM);</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Decrare a variable protected by Mutex.</span>
+<span class="doccomment">/// // It is wrapped in std::Arc to share this mutex itself among threads.</span>
+<span class="doccomment">/// let mutex = Arc::new(Mutex::new(0));</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Create worker threads to inclement the value by 1.</span>
+<span class="doccomment">/// for _ in 0..WORKER_NUM {</span>
+<span class="doccomment">///     let mutex = mutex.clone();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     let handle = thread::spawn(move || {</span>
+<span class="doccomment">///         let mut num = mutex.lock().unwrap();</span>
+<span class="doccomment">///         *num += 1;</span>
+<span class="doccomment">///     });</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     handles.push(handle);</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Wait for the all worker threads are finished.</span>
+<span class="doccomment">/// for handle in handles {</span>
+<span class="doccomment">///     handle.join().unwrap();</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Make sure the value is incremented by the worker count.</span>
+<span class="doccomment">/// let num = mutex.lock().unwrap();</span>
+<span class="doccomment">/// assert_eq!(WORKER_NUM, *num);</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// To recover from a poisoned mutex:</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use spin_sync::Mutex;</span>
+<span class="doccomment">/// use std::sync::Arc;</span>
+<span class="doccomment">/// use std::thread;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// let mutex = Arc::new(Mutex::new(0));</span>
+<span class="doccomment">/// let c_mutex = mutex.clone();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// let _ = thread::spawn(move || -&gt; () {</span>
+<span class="doccomment">///     // This thread will acquire the mutex first, unwrapping the result of</span>
+<span class="doccomment">///     // `lock` because the lock has not been poisoned.</span>
+<span class="doccomment">///     let _guard = c_mutex.lock().unwrap();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     // This panic while holding the lock (`_guard` is in scope) will poison</span>
+<span class="doccomment">///     // the mutex.</span>
+<span class="doccomment">///     panic!();</span>
+<span class="doccomment">/// }).join();</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // Here, the mutex has been poisoned.</span>
+<span class="doccomment">/// assert_eq!(true, mutex.is_poisoned());</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// // The returned result can be pattern matched on to return the underlying</span>
+<span class="doccomment">/// // guard on both branches.</span>
+<span class="doccomment">/// let mut guard = match mutex.lock() {</span>
+<span class="doccomment">///     Ok(guard) =&gt; guard,</span>
+<span class="doccomment">///     Err(poisoned) =&gt; poisoned.into_inner(),</span>
+<span class="doccomment">/// };</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// *guard += 1;</span>
+<span class="doccomment">/// assert_eq!(1, *guard);</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> {
     <span class="ident">lock</span>: <span class="ident">AtomicU8</span>,
     <span class="ident">data</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
@@ -451,6 +649,13 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Creates a new mutex in an unlocked state ready for use.</span>
+    <span class="doccomment">/// # Examples</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use std::sync::Mutex;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let mutex = Mutex::new(0);</span>
+    <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="ident">Mutex</span> {
@@ -461,12 +666,13 @@
 
     <span class="doccomment">/// Consumes this mutex and returns the underlying data.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Since this call borrows the mutable reference, no lock is needed.</span>
+    <span class="doccomment">/// Note that this method won&#39;t acquire any lock because we know there is</span>
+    <span class="doccomment">/// no other references to `self`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If another user panicked whild holding this mutex, this function call</span>
-    <span class="doccomment">/// will wrap the result in a error and return it.</span>
+    <span class="doccomment">/// If another user panicked while holding this mutex, this call wraps</span>
+    <span class="doccomment">/// the result in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -478,9 +684,6 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LockResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="comment">// There is no other references to `self` because the argument is</span>
-        <span class="comment">// a mutable reference.</span>
-        <span class="comment">// No lock is required.</span>
         <span class="kw">let</span> <span class="ident">is_err</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">is_poisoned</span>();
         <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">data</span>.<span class="ident">into_inner</span>();
 
@@ -493,44 +696,38 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Acquires a mutex, blocking the current thread until it is able to do so.</span>
+    <span class="doccomment">/// Blocks the current thread until acquiring the lock, and returns an RAII guard object.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function will block the local thread until it is available to acquire</span>
-    <span class="doccomment">/// the mutex. Upon returning, the thread is the only thread with the lock</span>
-    <span class="doccomment">/// held. An RAII guard is returned to allow scoped unlock of the lock. When</span>
-    <span class="doccomment">/// the guard goes out of scope, the mutex will be unlocked.</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Blocks until this thread acquires the exclusive lock.</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wraps the guard in `Result` and returns it. If this mutex has been</span>
+    <span class="doccomment">///       poisoned, it is wrapped in an `Err`; otherwise wrapped in a `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data through the returned guard.</span>
+    <span class="doccomment">///    (No other thread can access to the data then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// If another user panicked while holding this mutex, this method call wraps</span>
-    <span class="doccomment">/// the guard in an error and return it.</span>
+    <span class="doccomment">/// the guard in an error and returns it.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Example</span>
+    <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">///    use spin_sync::Mutex;</span>
-    <span class="doccomment">///    use std::sync::Arc;</span>
-    <span class="doccomment">///    use std::thread;</span>
+    <span class="doccomment">/// use spin_sync::Mutex;</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    const NUM: usize = 10;</span>
+    <span class="doccomment">/// let mutex = Mutex::new(0);</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    let mutex = Arc::new(Mutex::new(0));</span>
-    <span class="doccomment">///    let mut handles = Vec::with_capacity(NUM);</span>
+    <span class="doccomment">/// let mut guard = mutex.lock().unwrap();</span>
+    <span class="doccomment">/// assert_eq!(0, *guard);</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    for _ in 0..NUM {</span>
-    <span class="doccomment">///        let mutex = mutex.clone();</span>
-    <span class="doccomment">///        let handle = thread::spawn(move || {</span>
-    <span class="doccomment">///            let mut num = mutex.lock().unwrap();</span>
-    <span class="doccomment">///            *num += 1;</span>
-    <span class="doccomment">///        });</span>
-    <span class="doccomment">///        handles.push(handle);</span>
-    <span class="doccomment">///    }</span>
+    <span class="doccomment">/// *guard += 1;</span>
+    <span class="doccomment">/// assert_eq!(1, *guard);</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    for handle in handles {</span>
-    <span class="doccomment">///        handle.join().unwrap();</span>
-    <span class="doccomment">///    }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///    assert_eq!(NUM, *mutex.lock().unwrap());</span>
+    <span class="doccomment">/// assert_eq!(true, mutex.try_lock().is_err());</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LockResult</span><span class="op">&lt;</span><span class="ident">MutexGuard</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
@@ -543,61 +740,58 @@
         }
     }
 
-    <span class="doccomment">/// Attempt to acquire this lock.</span>
+    <span class="doccomment">/// Attempts to acquire this lock and returns an RAII guard object if succeeded.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If another user is holding this lock, return an error immediately;</span>
-    <span class="doccomment">/// otherwise, return a RAII guard.</span>
+    <span class="doccomment">/// Behaves like [`lock`] except for this method returns an error immediately if another</span>
+    <span class="doccomment">/// user is holding the lock.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function does not block.</span>
+    <span class="doccomment">/// This method does not block.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Success</span>
+    <span class="doccomment">/// The actual flow will be as follows.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If this function call succeeded to acquire this lock, and if no user has</span>
-    <span class="doccomment">/// never panicked while holding this mutex, this function call success and</span>
-    <span class="doccomment">/// return a RAII guard.</span>
+    <span class="doccomment">/// 1. User calls this method.</span>
+    <span class="doccomment">///    1. Tries to acquire the lock. If failed (i.e. if the lock is being held,)</span>
+    <span class="doccomment">///       returns an error immediately and this flow is finished here.</span>
+    <span class="doccomment">///    1. Creates an RAII guard object.</span>
+    <span class="doccomment">///    1. Wrapps the guard in `Result` and returns it. If this mutex has been</span>
+    <span class="doccomment">///       poisoned, it is wrapped in an `Err`; otherwise wrapped in an `Ok`.</span>
+    <span class="doccomment">/// 1. User accesses to the underlying data through the returned guard.</span>
+    <span class="doccomment">///    (No other thread can access to the data then.)</span>
+    <span class="doccomment">/// 1. The guard is dropped (falls out of scope) and the lock is released.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// - If another user is holding this mutex, return TryLockError::WouldBlock.</span>
+    <span class="doccomment">/// - If another user is holding this mutex, [`TryLockError::WouldBlock`] is returned.</span>
     <span class="doccomment">/// - If this function call succeeded to acquire the lock, and if another</span>
-    <span class="doccomment">///   user paniced while holding this mutex, return</span>
-    <span class="doccomment">///   TryLockError::Poisoned(PoisonError&lt;MutexGuard&lt;T&gt;&gt;)</span>
+    <span class="doccomment">///   user panicked while holding this mutex, [`TryLockError::Poisoned`] is returned.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`lock`]: #method.lock</span>
+    <span class="doccomment">/// [`TryLockError::WouldBlock`]: type.TryLockError.html</span>
+    <span class="doccomment">/// [`TryLockError::Poisoned`]: type.TryLockError.html</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">///    use spin_sync::{Mutex, TryLockError};</span>
-    <span class="doccomment">///    use std::sync::Arc;</span>
-    <span class="doccomment">///    use std::thread;</span>
+    <span class="doccomment">/// use spin_sync::Mutex;</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    let mutex = Arc::new(Mutex::new(0));</span>
+    <span class="doccomment">/// let mutex = Mutex::new(0);</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    // Create a new thread to call mutex.try_to_lock() while holding</span>
-    <span class="doccomment">///    // the mutex in main thread.</span>
-    <span class="doccomment">///    {</span>
-    <span class="doccomment">///        let guard = mutex.lock().unwrap();</span>
-    <span class="doccomment">///        let mutex = mutex.clone();</span>
+    <span class="doccomment">/// // try_lock() fails while another guard is.</span>
+    <span class="doccomment">/// // It doesn&#39;t cause a deadlock.</span>
+    <span class="doccomment">/// {</span>
+    <span class="doccomment">///     let _guard = mutex.lock().unwrap();</span>
+    <span class="doccomment">///     assert_eq!(true, mutex.try_lock().is_err());</span>
+    <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///        thread::spawn(move || {</span>
-    <span class="doccomment">///            match mutex.try_lock() {</span>
-    <span class="doccomment">///                Err(TryLockError::WouldBlock) =&gt; assert!(true),</span>
-    <span class="doccomment">///                _ =&gt; assert!(false),</span>
-    <span class="doccomment">///            }</span>
-    <span class="doccomment">///        }).join().unwrap();</span>
-    <span class="doccomment">///    }</span>
+    <span class="doccomment">/// // try_lock() behaves like lock() if no other guard is.</span>
+    <span class="doccomment">/// {</span>
+    <span class="doccomment">///     let mut guard = mutex.try_lock().unwrap();</span>
+    <span class="doccomment">///     assert_eq!(true, mutex.try_lock().is_err());</span>
+    <span class="doccomment">///     *guard += 1;</span>
+    <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">///    // Release the lock and try to increment the mutex value in another</span>
-    <span class="doccomment">///    // thread.</span>
-    <span class="doccomment">///    {</span>
-    <span class="doccomment">///        let mutex = mutex.clone();</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///        thread::spawn(move || {</span>
-    <span class="doccomment">///            let mut num = mutex.try_lock().unwrap();</span>
-    <span class="doccomment">///            *num += 1;</span>
-    <span class="doccomment">///        }).join().unwrap();</span>
-    <span class="doccomment">///    }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///    assert_eq!(1, *mutex.try_lock().unwrap());</span>
+    <span class="doccomment">/// let guard = mutex.try_lock().unwrap();</span>
+    <span class="doccomment">/// assert_eq!(1, *guard);</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">TryLockResult</span><span class="op">&lt;</span><span class="ident">MutexGuard</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
@@ -610,7 +804,7 @@
         }
     }
 
-    <span class="doccomment">/// Try to acquire lock and return the lock status before updated.</span>
+    <span class="doccomment">/// Tries to acquire lock and returns the lock status before updated.</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">fn</span> <span class="ident">do_try_lock</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LockStatus</span> {
         <span class="comment">// Assume neither poisoned nor locked at first.</span>
@@ -624,20 +818,20 @@
             {
                 <span class="ident">s</span> <span class="kw">if</span> <span class="ident">s</span> <span class="op">=</span><span class="op">=</span> <span class="ident">expected</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">s</span>, <span class="comment">// Succeeded</span>
                 <span class="ident">s</span> <span class="kw">if</span> <span class="ident">is_locked</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">s</span>,  <span class="comment">// Another user is holding the lock.</span>
-                <span class="ident">s</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">expected</span> <span class="op">=</span> <span class="ident">s</span>,              <span class="comment">// Assumption was wrong (poisoned.) try again.</span>
+                <span class="ident">s</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">expected</span> <span class="op">=</span> <span class="ident">s</span>,              <span class="comment">// Assumption was wrong. Try again.</span>
             }
         }
     }
 
-    <span class="doccomment">/// Determin whether the mutex is poisoned or not.</span>
+    <span class="doccomment">/// Determines whether the mutex is poisoned or not.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// # Warning</span>
+    <span class="doccomment">/// # Warnings</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This function won&#39;t acquire this lock. If another thread is active,</span>
+    <span class="doccomment">/// This function won&#39;t acquire any lock. If another thread is active,</span>
     <span class="doccomment">/// the mutex can become poisoned at any time. You should not trust a `false`</span>
     <span class="doccomment">/// value for program correctness without additional synchronization.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This behavior is same to std::sync::Mutex::is_poisoned().</span>
+    <span class="doccomment">/// This behavior is same to `std::sync::Mutex::is_poisoned()`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -649,12 +843,15 @@
     <span class="doccomment">/// let mutex = Arc::new(Mutex::new(0));</span>
     <span class="doccomment">/// assert_eq!(false, mutex.is_poisoned());</span>
     <span class="doccomment">///</span>
+    <span class="doccomment">/// // Panic and poison the mutex.</span>
     <span class="doccomment">/// {</span>
     <span class="doccomment">///     let mutex = mutex.clone();</span>
     <span class="doccomment">///</span>
     <span class="doccomment">///     let _ = thread::spawn(move || {</span>
+    <span class="doccomment">///         // This panic while holding the lock (`_guard` is in scope) will poison</span>
+    <span class="doccomment">///         // the mutex.</span>
     <span class="doccomment">///         let _guard = mutex.lock().unwrap();</span>
-    <span class="doccomment">///         panic!(&quot;Poison this mutex&quot;);</span>
+    <span class="doccomment">///         panic!(&quot;Poison here&quot;);</span>
     <span class="doccomment">///     }).join();</span>
     <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
@@ -670,12 +867,13 @@
 
     <span class="doccomment">/// Returns a mutable reference to the underlying data.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Since this call borrows the mutable reference, no lock is needed.</span>
+    <span class="doccomment">/// Note that this method won&#39;t acquire any lock because we know there is</span>
+    <span class="doccomment">/// no other references to `self`.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Errors</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// If another user panicked whild holding this mutex, this function call</span>
-    <span class="doccomment">/// will wrap the result in a error and return it.</span>
+    <span class="doccomment">/// If another user panicked while holding this mutex, this method call</span>
+    <span class="doccomment">/// wraps the result in an error and returns it.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
@@ -741,11 +939,17 @@
 
 <span class="doccomment">/// An RAII implementation of a &quot;scoped lock&quot; of a mutex.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// When this structure is dropped (falls out of scope), the lock will be</span>
-<span class="doccomment">/// unlocked.</span>
+<span class="doccomment">/// When this structure is dropped (falls out of scope), the lock will be released.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// The data protected by the mutex can be accessed through this guard via its</span>
-<span class="doccomment">/// Deref and DerefMut implementations.</span>
+<span class="doccomment">/// `Deref` and `DerefMut` implementations.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// This structure is created by [`lock`] and [`try_lock`] methods on</span>
+<span class="doccomment">/// [`Mutex`].</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// [`lock`]: struct.Mutex.html#method.lock</span>
+<span class="doccomment">/// [`try_lock`]: struct.Mutex.html#method.try_lock</span>
+<span class="doccomment">/// [`Mutex`]: struct.Mutex.html</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MutexGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">mutex</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
