@@ -6,33 +6,80 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
-/// A reader-writer lock
+/// A reader-writer lock.
 ///
-/// This type of lock allows a number of readers or at most one writer at any
-/// point in time. The write portion of this lock typically allows modification
-/// of the underlying data (exclusive access) and the read portion of this lock
-/// typically allows for read-only access (shared access).
+/// It behaves like std::sync::RwLock except for using spinlock.
 ///
-/// In comparison, a Mutex does not distinguish between readers or writers
-/// that acquire the lock, therefore blocking any threads waiting for the lock to
-/// become available. An `RwLock` will allow any number of readers to acquire the
-/// lock as long as a writer is not holding the lock.
+/// This type of lock allows either a number of readers or at most one writer
+/// at the same time. Readers are allowed read-only access (shared access)
+/// to the underlying data while the writer is allowed read/write access
+/// (exclusive access.)
 ///
-/// The priority policy of the lock is dependent on the underlying operating
-/// system's implementation, and this type does not guarantee that any
-/// particular policy will be used.
+/// In comparison, a [`Mutex`] does not distinguish between readers and writers,
+/// therefore blocking any threads waiting for the lock to become available.
+/// An `RwLock` will allow any number of readers to acquire the lock as long as
+/// a writer is not holding the lock.
 ///
-/// The type parameter `T` represents the data that this lock protects. It is
-/// required that `T` satisfies Send to be shared across threads and
-/// Sync to allow concurrent access through readers.
+/// There is no priority difference with respect to the ordering of
+/// whether contentious readers or writers will acquire the lock first.
 ///
 /// # Poisoning
 ///
-/// An `RwLock`, like `Mutex`, will become poisoned on a panic. Note, however,
+/// An `RwLock`, like [`Mutex`], will become poisoned on a panic. Note, however,
 /// that an `RwLock` may only be poisoned if a panic occurs while it is locked
 /// exclusively (write mode). If a panic occurs in any reader, then the lock
 /// will not be poisoned.
 ///
+/// [`Mutex`]: struct.Mutex.html
+///
+/// # Examples
+///
+/// Create a variable protected by a RwLock, increment it by 2 in worker threads
+/// at the same time, and check the variable was updated rightly.
+///
+/// ```
+/// use spin_sync::RwLock;
+/// use std::sync::Arc;
+/// use std::thread;
+///
+/// const WORKER_NUM: usize = 10;
+/// let mut handles = Vec::with_capacity(WORKER_NUM);
+///
+/// // Decrare a variable protected by RwLock.
+/// // It is wrapped in std::Arc to share this instance itself among threads.
+/// let rwlock = Arc::new(RwLock::new(0));
+///
+/// // Create worker threads to inclement the value by 2.
+/// for _ in 0..WORKER_NUM {
+///     let c_rwlock = rwlock.clone();
+///
+///     let handle = thread::spawn(move || {
+///         let mut num = c_rwlock.write().unwrap();
+///         *num += 2;
+///     });
+///
+///     handles.push(handle);
+/// }
+///
+/// // Make sure the value is always multipile of 2 even if some worker threads
+/// // are working.
+/// //
+/// // Enclosing the lock with `{}` to drop it before waiting for the worker
+/// // threads; otherwise, deadlocks could be occurred.
+/// {
+///     let num = rwlock.read().unwrap();
+///     assert_eq!(0, *num % 2);
+/// }
+///
+/// // Wait for the all worker threads are finished.
+/// for handle in handles {
+///     handle.join().unwrap();
+/// }
+///
+/// // Make sure the value is incremented by 2 times the worker count.
+/// let num = rwlock.read().unwrap();
+/// assert_eq!(2 * WORKER_NUM, *num);
+/// ```
 pub struct RwLock<T: ?Sized> {
     // Each bit represents as follows.
     // - The most significant bit: poison flag
@@ -45,6 +92,15 @@ pub struct RwLock<T: ?Sized> {
 }
 
 impl<T> RwLock<T> {
+    /// Creates a new instance in unlocked state ready for use.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::RwLock;
+    ///
+    /// let lock = RwLock::new(5);
+    /// ```
     #[inline]
     #[must_use]
     pub fn new(t: T) -> Self {
@@ -54,26 +110,23 @@ impl<T> RwLock<T> {
         Self { lock, data }
     }
 
-    /// Consumes this `RwLock`, returning the underlying data.
+    /// Consumes this instance and returns the underlying data.
+    ///
+    /// Note that this method won't acquire any lock because we know there is
+    /// no other references to `self`.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock. An
-    /// error will only be returned if the lock would have otherwise been
-    /// acquired.
+    /// If another user panicked while holding the exclusive write lock of this instance,
+    /// this method call wraps the guard in an error and returns it.
     ///
     /// # Examples
     ///
     /// ```
     /// use spin_sync::RwLock;
     ///
-    /// let lock = RwLock::new(0);
-    /// {
-    ///     let mut guard = lock.write().unwrap();
-    ///     *guard += 1;
-    /// }
-    /// assert_eq!(1, lock.into_inner().unwrap());
+    /// let rwlock = RwLock::new(0);
+    /// assert_eq!(0, rwlock.into_inner().unwrap());
     /// ```
     #[inline]
     pub fn into_inner(self) -> LockResult<T> {
@@ -91,40 +144,39 @@ impl<T> RwLock<T> {
 }
 
 impl<T: ?Sized> RwLock<T> {
-    /// The maximum number of shared read locks at the same time.
+    /// The maximum shared read locks of each instance.
     pub const MAX_READ_LOCK_COUNT: u64 = SHARED_LOCK_MASK;
 
-    /// Locks this rwlock with shared read access, blocking the current thread
-    /// until it can be acquired.
+    /// Blocks the current thread until acquiring a shared read lock, and
+    /// returns an RAII guard object.
     ///
-    /// The calling thread will be blocked until there are no more writers which
-    /// hold the lock. There may be other readers currently inside the lock when
-    /// this method returns. This method does not provide any guarantees with
-    /// respect to the ordering of whether contentious readers or writers will
-    /// acquire the lock first.
+    /// The actual flow will be as follows.
     ///
-    /// Returns an RAII guard which will release this thread's shared access
-    /// once it is dropped.
+    /// 1. User calls this method.
+    ///    1. Blocks until this thread acquires a shared read lock
+    ///       (i.e. until the exclusive write lock is held.)
+    ///    1. Creates an RAII guard object.
+    ///    1. Wrapps the guard in `Result` and returns it. If this instance has been
+    ///       poisoned, it is wrapped in an `Err`; otherwise wrapped in an `Ok`.
+    /// 1. User accesses to the underlying data to read through the guard.
+    ///    (No write access is then.)
+    /// 1. The guard is dropped (falls out of scope) and the lock is released.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock.
-    /// The failure will occur immediately after the lock has been acquired.
+    /// If another user panicked while holding the exclusive write lock of this instance,
+    /// this method call wraps the guard in an error and returns it.
     ///
     /// # Panics
     ///
-    /// Cause panic if the maximum count of shared locks are being holded. (maximum
-    /// number is 0x3fffffffffffffff.)
+    /// This method panics if `MAX_READ_LOCK_COUNT` shared locks are.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::sync::Arc;
-    /// use std::thread;
     /// use spin_sync::RwLock;
     ///
-    /// let lock = Arc::new(RwLock::new(1));
+    /// let lock = RwLock::new(1);
     ///
     /// let guard1 = lock.read().unwrap();
     /// assert_eq!(1, *guard1);
@@ -143,28 +195,41 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
-    /// Attempts to acquire this rwlock with shared read access.
+    /// Attempts to acquire a shared read lock and returns an RAII guard object if succeeded.
     ///
-    /// If the access could not be granted at this time, then `Err` is returned.
-    /// Otherwise, an RAII guard is returned which will release the shared access
-    /// when it is dropped.
+    /// Behaves like [`read`] except for this method returns an error immediately
+    /// if the exclusive write lock is being held.
     ///
     /// This function does not block.
     ///
-    /// This function does not provide any guarantees with respect to the ordering
-    /// of whether contentious readers or writers will acquire the lock first.
+    /// The actual flow will be as follows.
+    ///
+    /// 1. User calls this method.
+    ///    1. Tries to acquire a shared read lock. If failed (i.e. if the exclusive write
+    ///       lock is being held,) returns an error immediately and this flow is finished here.
+    ///    1. Creates an RAII guard object.
+    ///    1. Wrapps the guard in `Result` and returns it. If this instance has been poisoned,
+    ///       it is wrapped in an `Err`; otherwise wrapped in an `Ok`.
+    /// 1. User accesses to the underlying data to read through the guard.
+    ///    (No write access is at then.)
+    /// 1. The guard is dropped (falls out of scope) and the lock is released.
+    ///
+    /// [`read`]: #method.read
     ///
     /// # Panics
     ///
-    /// Cause panic if the maximum count of shared locks are being holded. (maximum
-    /// number is 0x3fffffffffffffff.)
+    /// This method panics if `MAX_READ_LOCK` shared read locks are.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock. An
-    /// error will only be returned if the lock would have otherwise been
-    /// acquired.
+    /// - If another user is holding the exclusive write lock,
+    ///   [`TryLockError::WouldBlock`] is returned.
+    /// - If this method call succeeded to acquire a shared read lock, and if another
+    ///   user had panicked while holding the exclusive write lock,
+    ///   [`TryLockError::Poisoned`] is returned.
+    ///
+    /// [`TryLockError::WouldBlock`]: type.TryLockError.html
+    /// [`TryLockError::Poisoned`]: type.TryLockError.html
     ///
     /// # Examples
     ///
@@ -190,23 +255,37 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
-    /// Attempts to lock this rwlock with exclusive write access.
+    /// Attempts to acquire the exclusive write lock and returns an RAII guard object
+    /// if succeeded.
     ///
-    /// If the lock could not be acquired at this time, then `Err` is returned.
-    /// Otherwise, an RAII guard is returned which will release the lock when
-    /// it is dropped.
+    /// Behaves like [`write`] except for this method returns an error immediately
+    /// if any other lock (either read lock or write lock) is being held.
     ///
-    /// This function does not block.
+    /// This method does not block.
     ///
-    /// This function does not provide any guarantees with respect to the ordering
-    /// of whether contentious readers or writers will acquire the lock first.
+    /// The actual flow will be as follows.
+    ///
+    /// 1. User calls this method.
+    ///    1. Tries to acquire the exclusive write lock. If failed (i.e. if any other lock is
+    ///       being held,) returns an error immediately and this flow is finished here.
+    ///    1. Creates an RAII guard object.
+    ///    1. Wraps the guard in `Result` and returns it. If this instance has been poisoned,
+    ///       it is wrapped in an `Err`; otherwise wrapped in an `Ok`.
+    /// 1. User accesses to the underlying data to read/write through the guard.
+    ///    (No other access is then.)
+    /// 1. The guard is dropped (falls out of scope) and the lock is released.
+    ///
+    /// [`write`]: #method.write
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock. An
-    /// error will only be returned if the lock would have otherwise been
-    /// acquired.
+    /// - If another user is holding any other lock (either read lock or write lock),
+    ///   [`TryLockError::WouldBlock`] is returned.
+    /// - If this method call succeeded to acquire the lock, and if another user had panicked
+    ///   while holding the exclusive write lock, [`TryLockError::Poisoned`] is returned.
+    ///
+    /// [`TryLockError::WouldBlock`]: type.TryLockError.html
+    /// [`TryLockError::Poisoned`]: type.TryLockError.html
     ///
     /// # Examples
     ///
@@ -235,36 +314,41 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
-    /// Locks this rwlock with exclusive write access, blocking the current
-    /// thread until it can be acquired.
+    /// Blocks the current thread until acquiring the exclusive write lock, and
+    /// returns an RAII guard object.
     ///
-    /// This function will not return while other writers or other readers
-    /// currently have access to the lock.
+    /// The actual flow will be as follows.
     ///
-    /// Returns an RAII guard which will drop the write access of this rwlock
-    /// when dropped.
+    /// 1. User calls this method.
+    ///    1. Blocks until this thread acquires the exclusive write lock
+    ///       (i.e. until any other lock is held.)
+    ///    1. Creates an RAII guard object.
+    ///    1. Wrapps the guard in Result and returns it. If this instance has been
+    ///       poisoned, it is wrapped in an `Err`; otherwise wrapped in an `Ok`.
+    /// 1. User accesses to the underlying data to read/write through the guard.
+    ///    (No other access is then.)
+    /// 1. The guard is dropped (falls out of scope) and the lock is released.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock.
-    /// An error will be returned when the lock is acquired.
+    /// If another user panicked while holding the exclusive write lock of this instance,
+    /// this method call wraps the guard in an error and returns it.
     ///
     /// # Examples
     ///
     /// ```
     /// use spin_sync::RwLock;
     ///
-    /// let lock = RwLock::new(1);
+    /// let lock = RwLock::new(0);
     ///
     /// let mut guard = lock.write().unwrap();
-    /// assert_eq!(1, *guard);
+    /// assert_eq!(0, *guard);
     ///
     /// *guard += 1;
-    /// assert_eq!(2, *guard);
+    /// assert_eq!(1, *guard);
     ///
-    /// assert!(lock.try_read().is_err());
-    /// assert!(lock.try_write().is_err());
+    /// assert_eq!(true, lock.try_read().is_err());
+    /// assert_eq!(true, lock.try_write().is_err());
     /// ```
     #[inline]
     pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, T>> {
@@ -310,11 +394,11 @@ impl<T: ?Sized> RwLock<T> {
         }
     }
 
-    /// Determin whether the lock is poisoned or not.
+    /// Determines whether the lock is poisoned or not.
     ///
     /// # Warning
     ///
-    /// This function won't acquire this lock. If another thread is active,
+    /// This function won't acquire any lock. If another thread is active,
     /// the rwlock can become poisoned at any time. You should not trust a `false`
     /// value for program correctness without additional synchronization.
     ///
@@ -332,8 +416,10 @@ impl<T: ?Sized> RwLock<T> {
     ///     let lock = lock.clone();
     ///
     ///     let _ = thread::spawn(move || {
+    ///         // This panic while holding the lock (`_guard` is in scope) will poison
+    ///         // the instance.
     ///         let _guard = lock.write().unwrap();
-    ///         panic!("Poison this lock");
+    ///         panic!("Poison here");
     ///     }).join();
     /// }
     ///
@@ -347,15 +433,13 @@ impl<T: ?Sized> RwLock<T> {
 
     /// Returns a mutable reference to the underlying data.
     ///
-    /// Since this call borrows the `RwLock` mutably, no actual locking needs to
-    /// take place -- the mutable borrow statically guarantees no locks exist.
+    /// Note that this method won't acquire any lock because we know there is
+    /// no other references to `self`.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the RwLock is poisoned. An RwLock
-    /// is poisoned whenever a writer panics while holding an exclusive lock. An
-    /// error will only be returned if the lock would have otherwise been
-    /// acquired.
+    /// If another user panicked while holding the exclusive write lock of this instance,
+    /// this method call wraps the guard in an error and returns it.
     ///
     /// # Examples
     ///
@@ -415,11 +499,19 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
     }
 }
 
-/// RAII structure used to release the shared read access of a lock when
-/// dropped.
+/// An RAII implementation of a "scoped shared read lock" of a RwLock.
 ///
-/// The data protected by the RwLock can be accessed through this guard via its
-/// Deref implementation.
+/// When this instance is dropped (falls out of scope), the lock will be released.
+///
+/// The data protected by the RwLock can be accessed to read
+/// through this guard via its `Deref` implementation.
+///
+/// This instance is created by [`read`] and [`try_read`] methods on
+/// [`RwLock`].
+///
+/// [`read`]: struct.RwLock.html#method.read
+/// [`try_read`]: struct.RwLock.html#method.try_read
+/// [`RwLock`]: struct.RwLock.html
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
@@ -483,11 +575,19 @@ impl<T: fmt::Debug> fmt::Debug for RwLockReadGuard<'_, T> {
     }
 }
 
-/// RAII structure used to release the exclusive write access of a lock when
-/// dropped.
+/// An RAII implementation of a "scoped exclusive write lock" of a RwLock.
 ///
-/// The data protected by the RwLock can be accessed through this guard via its
-/// Deref and DerefMut implementations.
+/// When this instance is dropped (falls out of scope), the lock will be released.
+///
+/// The data protected by the RwLock can be accessed to read/write
+/// through this guard via its `Deref` and `DerefMut` implementation.
+///
+/// This instance is created by [`write`] and [`try_write`] methods on
+/// [`RwLock`].
+///
+/// [`write`]: struct.RwLock.html#method.write
+/// [`try_write`]: struct.RwLock.html#method.try_write
+/// [`RwLock`]: struct.RwLock.html
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
 }
