@@ -91,6 +91,9 @@ impl<T> RwLock<T> {
 }
 
 impl<T: ?Sized> RwLock<T> {
+    /// The maximum number of shared read locks at the same time.
+    pub const MAX_READ_LOCK_COUNT: u64 = SHARED_LOCK_MASK;
+
     /// Locks this rwlock with shared read access, blocking the current thread
     /// until it can be acquired.
     ///
