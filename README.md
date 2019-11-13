@@ -89,7 +89,7 @@ fn main() {
 
 `RwLock` resembles `Mutex` except for it distinguishes readers and writers.
 
-RwLock::write()` behaves like `Mutex::lock()`.
+`RwLock::write()` behaves like `Mutex::lock()`.
 It acquires the exclusive write lock and returns an RAII guard object. The lock will be released when the guard is dropped (falls out of scope.)
 This guard allows read/write access (exclusive access) to the underlying data via its `Defer` and `DeferMut` implementations.
 
