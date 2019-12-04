@@ -2,6 +2,7 @@
 #![feature(external_doc)]
 #![doc(include = "../README.md")]
 
+mod misc;
 mod mutex;
 mod result;
 mod rwlock;
