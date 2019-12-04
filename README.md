@@ -7,7 +7,6 @@ The main features are as follows.
 
 - Declaring public structs `Mutex` and `RwLock`, whose interfaces are resembles those of `std::sync`.
 - Ensuring safety as much as `std::sync`.
-- Unfortunately, rust nightly version is required so far.
 
 ## How to use
 
@@ -17,25 +16,13 @@ The main features are as follows.
    spin-sync = "0.0.1"
    ```
 
-1. Make sure to install rust nightly toolchain.
-
-   ```shell
-   rustup toolchain install nightly
-   ```
-
 1. Build, test and run your project.
 
    ```shell
-   cargo +nightly build
-   cargo +nightly test
-   cargo +nightly run
+   cargo build
+   cargo test
+   cargo run
    ```
-
-## Why nightly toolchain is required?
-
-To implement negative trait `!Sync`.
-
-It is necessary to enable the rust compiler to find a kind of bug. (std::sync do the same thing, too.) Rust compiler requests the feature `option_builtin_traits` and the nightly toolchain to do it except for the std library.
 
 ## Examples
 
