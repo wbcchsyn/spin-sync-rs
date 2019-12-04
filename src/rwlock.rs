@@ -595,13 +595,17 @@ impl<T: fmt::Debug> fmt::Debug for RwLockReadGuard<'_, T> {
 /// [`RwLock`]: struct.RwLock.html
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
+    _phantom: PhantomNotSend, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
     #[must_use]
     #[inline]
     fn new(rwlock: &'a RwLock<T>) -> Self {
-        Self { rwlock }
+        Self {
+            rwlock,
+            _phantom: PhantomNotSend::default(),
+        }
     }
 }
 
