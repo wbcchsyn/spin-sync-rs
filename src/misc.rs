@@ -1,11 +1,10 @@
-use std::env::Vars;
 use std::marker::PhantomData;
+use std::sync::MutexGuard;
 
-/// Vars is an example to implement !Send.
-type NotSend = Vars;
+type NotSend<'a, T> = MutexGuard<'a, T>;
 
 /// PhantomData implementing !Send
 ///
 /// Structs will implement !Send automatically to own property of this type
 /// without consuming any memory.
-pub type PhantomNotSend = PhantomData<NotSend>;
+pub type PhantomNotSend<'a, T> = PhantomData<NotSend<'a, T>>;

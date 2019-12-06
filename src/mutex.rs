@@ -421,7 +421,7 @@ impl<T: ?Sized + Default> Default for Mutex<T> {
 /// [`Mutex`]: struct.Mutex.html
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
-    _phantom: PhantomNotSend, // To implement !Send.
+    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {

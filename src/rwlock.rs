@@ -515,7 +515,7 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
 /// [`RwLock`]: struct.RwLock.html
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
-    _phantom: PhantomNotSend, // To implement !Send.
+    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
@@ -595,7 +595,7 @@ impl<T: fmt::Debug> fmt::Debug for RwLockReadGuard<'_, T> {
 /// [`RwLock`]: struct.RwLock.html
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
-    _phantom: PhantomNotSend, // To implement !Send.
+    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
