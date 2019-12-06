@@ -4,7 +4,6 @@ jobs:
         docker:
             - image: circleci/rust
         steps:
-            - run: rustup toolchain install nightly
             - checkout
-            - run: cargo '+nightly' test
+            - run: cargo test
 
