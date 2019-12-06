@@ -583,6 +583,7 @@ impl<T: fmt::Debug> fmt::Debug for RwLockReadGuard<'_, T> {
 /// [`write`]: struct.RwLock.html#method.write
 /// [`try_write`]: struct.RwLock.html#method.try_write
 /// [`RwLock`]: struct.RwLock.html
+#[must_use = "if unused the RwLock will immediately unlock"]
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
     _phantom: PhantomNotSend<'a, T>, // To implement !Send.
