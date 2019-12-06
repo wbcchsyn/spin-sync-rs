@@ -505,6 +505,7 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
 /// [`read`]: struct.RwLock.html#method.read
 /// [`try_read`]: struct.RwLock.html#method.try_read
 /// [`RwLock`]: struct.RwLock.html
+#[must_use = "if unused the RwLock will immediately unlock"]
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
     _phantom: PhantomNotSend<'a, T>, // To implement !Send.
