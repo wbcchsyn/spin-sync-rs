@@ -102,7 +102,6 @@ impl<T> RwLock<T> {
     ///
     /// let lock = RwLock::new(5);
     /// ```
-    #[must_use]
     pub fn new(t: T) -> Self {
         let lock = AtomicU64::new(INIT);
         let data = UnsafeCell::new(t);
@@ -512,7 +511,6 @@ pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
 }
 
 impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
-    #[must_use]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
@@ -590,7 +588,6 @@ pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
 }
 
 impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
-    #[must_use]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
