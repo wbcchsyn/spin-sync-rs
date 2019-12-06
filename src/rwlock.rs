@@ -102,7 +102,6 @@ impl<T> RwLock<T> {
     ///
     /// let lock = RwLock::new(5);
     /// ```
-    #[inline]
     #[must_use]
     pub fn new(t: T) -> Self {
         let lock = AtomicU64::new(INIT);
@@ -129,7 +128,6 @@ impl<T> RwLock<T> {
     /// let rwlock = RwLock::new(0);
     /// assert_eq!(0, rwlock.into_inner().unwrap());
     /// ```
-    #[inline]
     pub fn into_inner(self) -> LockResult<T> {
         // We know statically that there are no outstanding references to
         // `self` so there's no need to lock the inner lock.
@@ -185,7 +183,6 @@ impl<T: ?Sized> RwLock<T> {
     /// let guard2 = lock.read().unwrap();
     /// assert_eq!(1, *guard2);
     /// ```
-    #[inline]
     pub fn read(&self) -> LockResult<RwLockReadGuard<'_, T>> {
         loop {
             match self.try_lock(acquire_shared_lock, is_locked_exclusively) {
@@ -245,7 +242,6 @@ impl<T: ?Sized> RwLock<T> {
     /// let guard1 = lock.try_read().unwrap();
     /// assert_eq!(1, *guard1);
     /// ```
-    #[inline]
     pub fn try_read(&self) -> TryLockResult<RwLockReadGuard<T>> {
         match self.try_lock(acquire_shared_lock, is_locked_exclusively) {
             s if is_locked_exclusively(s) => Err(TryLockError::WouldBlock),
@@ -304,7 +300,6 @@ impl<T: ?Sized> RwLock<T> {
     /// assert!(lock.try_write().is_err());
     /// assert!(lock.try_read().is_err());
     /// ```
-    #[inline]
     pub fn try_write(&self) -> TryLockResult<RwLockWriteGuard<T>> {
         match self.try_lock(acquire_exclusive_lock, is_locked) {
             s if is_locked(s) => Err(TryLockError::WouldBlock),
@@ -351,7 +346,6 @@ impl<T: ?Sized> RwLock<T> {
     /// assert_eq!(true, lock.try_read().is_err());
     /// assert_eq!(true, lock.try_write().is_err());
     /// ```
-    #[inline]
     pub fn write(&self) -> LockResult<RwLockWriteGuard<'_, T>> {
         loop {
             match self.try_lock(acquire_exclusive_lock, is_locked) {
@@ -426,7 +420,6 @@ impl<T: ?Sized> RwLock<T> {
     ///
     /// assert_eq!(true, lock.is_poisoned());
     /// ```
-    #[inline]
     pub fn is_poisoned(&self) -> bool {
         let status = self.lock.load(Ordering::Relaxed);
         is_poisoned(status)
@@ -451,7 +444,6 @@ impl<T: ?Sized> RwLock<T> {
     /// *lock.get_mut().unwrap() = 10;
     /// assert_eq!(*lock.read().unwrap(), 10);
     /// ```
-    #[inline]
     pub fn get_mut(&mut self) -> LockResult<&mut T> {
         // We know statically that there are no other references to `self`, so
         // there's no need to lock the inner lock.
@@ -520,7 +512,6 @@ pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
 
 impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
     #[must_use]
-    #[inline]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
@@ -532,7 +523,6 @@ impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
 impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
     type Target = T;
 
-    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.rwlock.data.get() }
     }
@@ -541,7 +531,6 @@ impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
 impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
     /// Make sure to release the shared read lock.
     /// This function will never poison the rwlock.
-    #[inline]
     fn drop(&mut self) {
         // Assume not poisoned and no other user is holding the lock at first.
         let mut expected = acquire_shared_lock(INIT);
@@ -600,7 +589,6 @@ pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
 
 impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
     #[must_use]
-    #[inline]
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
@@ -612,14 +600,12 @@ impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
 impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
     type Target = T;
 
-    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.rwlock.data.get() }
     }
 }
 
 impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
-    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.rwlock.data.get() }
     }
@@ -629,7 +615,6 @@ impl<T: ?Sized> Drop for RwLockWriteGuard<'_, T> {
     /// Make sure to release the exclusive write lock.
     ///
     /// If this user panicked, poison the lock.
-    #[inline]
     fn drop(&mut self) {
         let old_status = self.rwlock.lock.load(Ordering::Relaxed);
 

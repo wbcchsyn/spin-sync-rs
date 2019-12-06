@@ -125,7 +125,6 @@ impl<T> Mutex<T> {
     ///
     /// let mutex = Mutex::new(0);
     /// ```
-    #[inline]
     pub fn new(t: T) -> Self {
         Mutex {
             lock: AtomicU8::new(INIT),
@@ -151,7 +150,6 @@ impl<T> Mutex<T> {
     /// let mutex = Mutex::new(0);
     /// assert_eq!(0, mutex.into_inner().unwrap());
     /// ```
-    #[inline]
     pub fn into_inner(self) -> LockResult<T> {
         let is_err = self.is_poisoned();
         let data = self.data.into_inner();
@@ -198,7 +196,6 @@ impl<T: ?Sized> Mutex<T> {
     ///
     /// assert_eq!(true, mutex.try_lock().is_err());
     /// ```
-    #[inline]
     pub fn lock(&self) -> LockResult<MutexGuard<T>> {
         loop {
             match self.do_try_lock() {
@@ -262,7 +259,6 @@ impl<T: ?Sized> Mutex<T> {
     /// let guard = mutex.try_lock().unwrap();
     /// assert_eq!(1, *guard);
     /// ```
-    #[inline]
     pub fn try_lock(&self) -> TryLockResult<MutexGuard<T>> {
         match self.do_try_lock() {
             s if is_locked(s) => Err(TryLockError::WouldBlock),
@@ -274,7 +270,6 @@ impl<T: ?Sized> Mutex<T> {
     }
 
     /// Tries to acquire lock and returns the lock status before updated.
-    #[inline]
     fn do_try_lock(&self) -> LockStatus {
         // Assume neither poisoned nor locked at first.
         let mut expected = INIT;
@@ -326,7 +321,6 @@ impl<T: ?Sized> Mutex<T> {
     ///
     /// assert_eq!(true, mutex.is_poisoned());
     /// ```
-    #[inline]
     pub fn is_poisoned(&self) -> bool {
         // Don't acquire any lock; otherwise, this function will cause
         // a deadlock if the caller thread is holding the lock.
@@ -353,7 +347,6 @@ impl<T: ?Sized> Mutex<T> {
     /// *mutex.get_mut().unwrap() = 10;
     /// assert_eq!(10, *mutex.lock().unwrap());
     /// ```
-    #[inline]
     pub fn get_mut(&mut self) -> LockResult<&mut T> {
         // There is no other references to `self` because the argument is
         // a mutable reference.
@@ -393,14 +386,12 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for Mutex<T> {
 }
 
 impl<T> From<T> for Mutex<T> {
-    #[inline]
     fn from(t: T) -> Self {
         Mutex::new(t)
     }
 }
 
 impl<T: ?Sized + Default> Default for Mutex<T> {
-    #[inline]
     fn default() -> Self {
         Mutex::new(T::default())
     }
@@ -425,7 +416,6 @@ pub struct MutexGuard<'a, T: ?Sized + 'a> {
 }
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
-    #[inline]
     fn new(mutex: &'a Mutex<T>) -> Self {
         Self {
             mutex,
@@ -435,7 +425,6 @@ impl<'a, T: ?Sized> MutexGuard<'a, T> {
 }
 
 impl<T: ?Sized> Drop for MutexGuard<'_, T> {
-    #[inline]
     fn drop(&mut self) {
         let old_status = self.mutex.lock.load(Ordering::Relaxed);
         debug_assert!(is_locked(old_status));
@@ -452,14 +441,12 @@ impl<T: ?Sized> Drop for MutexGuard<'_, T> {
 impl<T: ?Sized> Deref for MutexGuard<'_, T> {
     type Target = T;
 
-    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.mutex.data.get() }
     }
 }
 
 impl<T: ?Sized> DerefMut for MutexGuard<'_, T> {
-    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.mutex.data.get() }
     }
