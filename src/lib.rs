@@ -13,7 +13,7 @@
 //! 1. Add the following line in dependencies section in your Cargo.toml.
 //!
 //!    ```Cargo.toml
-//!    spin-sync = "0.1.0"
+//!    spin-sync = "0.1.1"
 //!    ```
 //!
 //! 1. Build, test and run your project.
