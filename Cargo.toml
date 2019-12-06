@@ -19,7 +19,7 @@ license = "MIT"
 repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
 
 [badges]
-circle-ci = { repository = "https://circleci.com/gh/wbcchsyn/spin-sync-rs" }
+circle-ci = { repository = "https://github.com/wbcchsyn/spin-sync-rs.git" }
 travis-ci = { repository = "wbcchsyn/spin-sync-rs" }
 
 [dependencies]
