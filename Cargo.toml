@@ -1,6 +1,6 @@
 [package]
 name = "spin-sync"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Yoshida Shin <wbcchsyn@gmail.com>"]
 edition = "2018"
 
@@ -19,7 +19,7 @@ license = "MIT"
 repository = "https://github.com/wbcchsyn/spin-sync-rs.git"
 
 [badges]
-circle-ci = { repository = "https://github.com/wbcchsyn/spin-sync-rs.git" }
+circle-ci = { repository = "wbcchsyn/spin-sync-rs" }
 travis-ci = { repository = "wbcchsyn/spin-sync-rs" }
 
 [dependencies]
