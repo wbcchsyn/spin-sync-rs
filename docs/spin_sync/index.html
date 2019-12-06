@@ -4,13 +4,13 @@
 <p>The main features are as follows.</p>
 <ul>
 <li>Declaring public structs <code>Mutex</code> and <code>RwLock</code>, whose interfaces are resembles those of <code>std::sync</code>.</li>
-<li>Ensuring safety as much as <code>std::sync</code>.</li>
+<li>Ensuring safety as much as <code>std::sync</code>, including poisoning strategy and marker traits.</li>
 </ul>
 <h2 id="how-to-use" class="section-header"><a href="#how-to-use">How to use</a></h2>
 <ol>
 <li>
 <p>Add the following line in dependencies section in your Cargo.toml.</p>
-<pre><code class="language-Cargo.toml">spin-sync = &quot;0.1.0&quot;
+<pre><code class="language-Cargo.toml">spin-sync = &quot;0.1.1&quot;
 </code></pre>
 </li>
 <li>
