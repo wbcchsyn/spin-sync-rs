@@ -6,7 +6,7 @@
 //! The main features are as follows.
 //!
 //! - Declaring public structs `Mutex` and `RwLock`, whose interfaces are resembles those of `std::sync`.
-//! - Ensuring safety as much as `std::sync`.
+//! - Ensuring safety as much as `std::sync`, including poisoning strategy and marker traits.
 //!
 //! ## How to use
 //!
