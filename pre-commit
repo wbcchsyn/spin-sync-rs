@@ -1,0 +1,16 @@
+#!/bin/sh
+
+check_rustdoc() {
+    grep '^//!' src/lib.rs | sed -E 's#^//! ?##' | diff README.md -
+}
+
+check_format() {
+    find src -type f -name '*.rs' | xargs rustfmt --check
+}
+
+## main ##
+
+(
+    cd $(git rev-parse --show-toplevel)
+    check_rustdoc && check_format
+)
