@@ -410,6 +410,7 @@ impl<T: ?Sized + Default> Default for Mutex<T> {
 /// [`lock`]: struct.Mutex.html#method.lock
 /// [`try_lock`]: struct.Mutex.html#method.try_lock
 /// [`Mutex`]: struct.Mutex.html
+#[must_use = "if unused the Mutex will immediately unlock"]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
     _phantom: PhantomNotSend<'a, T>, // To implement !Send.
