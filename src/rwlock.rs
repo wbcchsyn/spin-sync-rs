@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::misc::PhantomNotSend;
+use crate::misc::{PhantomNotSend, PhantomRwLock};
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A reader-writer lock.
@@ -89,6 +89,7 @@ pub struct RwLock<T: ?Sized> {
     // Use helper functions for lock state.
     lock: AtomicU64,
 
+    _phantom: PhantomRwLock<T>,
     data: UnsafeCell<T>,
 }
 
@@ -105,8 +106,13 @@ impl<T> RwLock<T> {
     pub fn new(t: T) -> Self {
         let lock = AtomicU64::new(INIT);
         let data = UnsafeCell::new(t);
+        let _phantom = Default::default();
 
-        Self { lock, data }
+        Self {
+            lock,
+            data,
+            _phantom,
+        }
     }
 
     /// Consumes this instance and returns the underlying data.
