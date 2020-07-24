@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU8, Ordering};
 
-use crate::misc::{PhantomMutex, PhantomNotSend};
+use crate::misc::{PhantomMutex, PhantomMutexGuard};
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A mutual exclusion primitive useful for protecting shared data.
@@ -415,14 +415,14 @@ impl<T: ?Sized + Default> Default for Mutex<T> {
 #[must_use = "if unused the Mutex will immediately unlock"]
 pub struct MutexGuard<'a, T: ?Sized + 'a> {
     mutex: &'a Mutex<T>,
-    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
+    _phantom: PhantomMutexGuard<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
     fn new(mutex: &'a Mutex<T>) -> Self {
         Self {
             mutex,
-            _phantom: PhantomNotSend::default(),
+            _phantom: Default::default(),
         }
     }
 }
