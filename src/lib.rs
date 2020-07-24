@@ -136,6 +136,7 @@
 
 mod misc;
 mod mutex;
+mod once;
 mod result;
 mod rwlock;
 
