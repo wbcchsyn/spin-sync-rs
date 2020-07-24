@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU8, Ordering};
 
-use crate::misc::PhantomNotSend;
+use crate::misc::{PhantomMutex, PhantomNotSend};
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A mutual exclusion primitive useful for protecting shared data.
@@ -113,6 +113,7 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// ```
 pub struct Mutex<T: ?Sized> {
     lock: AtomicU8,
+    _phantom: PhantomMutex<T>,
     data: UnsafeCell<T>,
 }
 
@@ -129,6 +130,7 @@ impl<T> Mutex<T> {
         Mutex {
             lock: AtomicU8::new(INIT),
             data: UnsafeCell::new(t),
+            _phantom: Default::default(),
         }
     }
 
