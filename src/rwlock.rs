@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::misc::PhantomNotSend;
+use crate::misc::{PhantomRwLock, PhantomRwLockReadGuard, PhantomRwLockWriteGuard};
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A reader-writer lock.
@@ -89,6 +89,7 @@ pub struct RwLock<T: ?Sized> {
     // Use helper functions for lock state.
     lock: AtomicU64,
 
+    _phantom: PhantomRwLock<T>,
     data: UnsafeCell<T>,
 }
 
@@ -105,8 +106,13 @@ impl<T> RwLock<T> {
     pub fn new(t: T) -> Self {
         let lock = AtomicU64::new(INIT);
         let data = UnsafeCell::new(t);
+        let _phantom = Default::default();
 
-        Self { lock, data }
+        Self {
+            lock,
+            data,
+            _phantom,
+        }
     }
 
     /// Consumes this instance and returns the underlying data.
@@ -507,14 +513,14 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
 #[must_use = "if unused the RwLock will immediately unlock"]
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
-    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
+    _phantom: PhantomRwLockReadGuard<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
-            _phantom: PhantomNotSend::default(),
+            _phantom: Default::default(),
         }
     }
 }
@@ -584,14 +590,14 @@ impl<T: fmt::Debug> fmt::Debug for RwLockReadGuard<'_, T> {
 #[must_use = "if unused the RwLock will immediately unlock"]
 pub struct RwLockWriteGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
-    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
+    _phantom: PhantomRwLockWriteGuard<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockWriteGuard<'a, T> {
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
-            _phantom: PhantomNotSend::default(),
+            _phantom: Default::default(),
         }
     }
 }
