@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::misc::{PhantomNotSend, PhantomRwLock};
+use crate::misc::{PhantomNotSend, PhantomRwLock, PhantomRwLockReadGuard};
 use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 
 /// A reader-writer lock.
@@ -513,14 +513,14 @@ impl<T: ?Sized + fmt::Debug> fmt::Debug for RwLock<T> {
 #[must_use = "if unused the RwLock will immediately unlock"]
 pub struct RwLockReadGuard<'a, T: ?Sized + 'a> {
     rwlock: &'a RwLock<T>,
-    _phantom: PhantomNotSend<'a, T>, // To implement !Send.
+    _phantom: PhantomRwLockReadGuard<'a, T>, // To implement !Send.
 }
 
 impl<'a, T: ?Sized> RwLockReadGuard<'a, T> {
     fn new(rwlock: &'a RwLock<T>) -> Self {
         Self {
             rwlock,
-            _phantom: PhantomNotSend::default(),
+            _phantom: Default::default(),
         }
     }
 }
