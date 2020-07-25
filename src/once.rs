@@ -128,6 +128,55 @@ impl Once {
         self.state.store(s.state, Ordering::Relaxed);
     }
 
+    /// Returns true if some `call_once` call has completed successfully.
+    /// Specifically, `is_completed` will return false in the following situations:
+    ///
+    /// * `call_once` was not called at all,
+    /// * `call_once` was called, but has not yet completed,
+    /// * the `Once` instance is poisoned
+    ///
+    /// This function returning false does not mean that `Once` has not been executed.
+    /// For example, it may have been executed in the time between when `is_completed`
+    /// starts executing and when it returns, in which case the false return value would
+    /// be stale (but still permissible).
+    ///
+    /// # Examples
+    ///
+    /// `call_once` was succeeded.
+    ///
+    /// ```
+    /// use spin_sync::Once;
+    ///
+    /// static INIT: Once = Once::new();
+    ///
+    /// assert_eq!(INIT.is_completed(), false);
+    /// INIT.call_once(|| {
+    ///     assert_eq!(INIT.is_completed(), false);
+    /// });
+    /// assert_eq!(INIT.is_completed(), true);
+    /// ```
+    ///
+    /// `call_once` caused panic.
+    ///
+    /// ```
+    /// use spin_sync::Once;
+    /// use std::thread;
+    ///
+    /// static INIT: Once = Once::new();
+    ///
+    /// assert_eq!(INIT.is_completed(), false);
+    /// let handle = thread::spawn(|| {
+    ///     INIT.call_once(|| panic!());
+    /// });
+    /// assert!(handle.join().is_err());
+    /// assert_eq!(INIT.is_completed(), false);
+    /// ```
+    #[must_use]
+    pub fn is_completed(&self) -> bool {
+        let s = OnceState::new(self.state.load(Ordering::Relaxed));
+        (!s.poisoned()) && (s.finished())
+    }
+
     fn lock(&self) -> (OnceGuard, OnceState) {
         let mut expected = OnceState::default();
         loop {
