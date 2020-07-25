@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Mutex, MutexGuard, Once, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 /// PhantomData implementing !Send
 ///
@@ -10,3 +10,4 @@ pub type PhantomMutexGuard<'a, T> = PhantomData<MutexGuard<'a, T>>;
 pub type PhantomRwLock<T> = PhantomData<RwLock<T>>;
 pub type PhantomRwLockReadGuard<'a, T> = PhantomData<RwLockReadGuard<'a, T>>;
 pub type PhantomRwLockWriteGuard<'a, T> = PhantomData<RwLockWriteGuard<'a, T>>;
+pub type PhantomOnce = PhantomData<Once>;
