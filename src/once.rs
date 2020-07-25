@@ -291,3 +291,36 @@ impl OnceState {
         Self::new(self.state ^ Self::POISONED)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn call_once_invoke_task_only_once() {
+        let mut val = 0;
+        let once = Once::new();
+
+        assert_eq!(0, val);
+
+        once.call_once(|| val = 1);
+        assert_eq!(1, val);
+
+        once.call_once(|| val = 2);
+        assert_eq!(1, val);
+    }
+
+    #[test]
+    fn call_once_force_do_nothing_after_call_once_succeeded() {
+        let mut val = 0;
+        let once = Once::new();
+
+        assert_eq!(0, val);
+
+        once.call_once(|| val = 1);
+        assert_eq!(1, val);
+
+        once.call_once_force(|_| val = 2);
+        assert_eq!(1, val);
+    }
+}
