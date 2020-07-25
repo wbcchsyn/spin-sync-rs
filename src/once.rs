@@ -18,6 +18,34 @@ impl Once {
             _phantom: PhantomOnce {},
         }
     }
+
+    fn lock(&self) -> (OnceGuard, OnceState) {
+        let mut expected = OnceState::default();
+        loop {
+            let desired = expected.acquire_lock();
+
+            let current = OnceState::new(self.state.compare_and_swap(
+                expected.state,
+                desired.state,
+                Ordering::Acquire,
+            ));
+
+            // self is locked now. Try again later.
+            if current.locked() {
+                expected = current.release_lock();
+                std::thread::yield_now();
+                continue;
+            }
+
+            // Succeed
+            if current.state == expected.state {
+                return (OnceGuard { once: &self }, desired);
+            }
+
+            // expected was wrong.
+            expected = current;
+        }
+    }
 }
 
 struct OnceGuard<'a> {
