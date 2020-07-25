@@ -10,6 +10,16 @@ pub struct Once {
     _phantom: PhantomOnce,
 }
 
+impl Once {
+    /// Create a new `Once` instance.
+    pub const fn new() -> Self {
+        Self {
+            state: AtomicU8::new(OnceState::default().state),
+            _phantom: PhantomOnce {},
+        }
+    }
+}
+
 /// State yielded to `call_once_force`’s closure parameter. The state can be used to query
 /// the poison status of the `Once`
 pub struct OnceState {
