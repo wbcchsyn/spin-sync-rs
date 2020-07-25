@@ -157,7 +157,9 @@ impl OnceState {
     }
 
     #[must_use]
-    const fn poisoned(&self) -> bool {
+    /// Returns true if the associated `Once` was poisoned prior to the invocation of the closure
+    /// passed to `call_once_force`.
+    pub const fn poisoned(&self) -> bool {
         (self.state & Self::POISONED) != 0
     }
 
