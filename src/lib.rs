@@ -141,5 +141,6 @@ mod result;
 mod rwlock;
 
 pub use crate::mutex::{Mutex, MutexGuard};
+pub use crate::once::Once;
 pub use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 pub use crate::rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
