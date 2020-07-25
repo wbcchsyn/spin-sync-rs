@@ -77,6 +77,57 @@ impl Once {
         self.state.store(s.state, Ordering::Relaxed);
     }
 
+    /// Performs the same function as `call_once` except ignores poisoning.
+    ///
+    /// Unlike `call_once`, if this `Once` has been poisoned (i.e., a previous call to `call_once`
+    /// or `call_once_force` caused a panic), calling `call_once_force` will still invoke the closure
+    /// f and will not result in an immediate panic. If f panics, the `Once` will remain in a poison state.
+    /// If f does not panic, the `Once` will no longer be in a poison state and all future calls to
+    /// `call_once` or `call_once_force` will be no-ops.
+    ///
+    /// The closure f is yielded a `OnceState` structure which can be used to query the poison status of the `Once`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::Once;
+    /// use std::thread;
+    ///
+    /// static INIT: Once = Once::new();
+    ///
+    /// // Poison INIT
+    /// let handle = thread::spawn(|| {
+    ///     INIT.call_once(|| panic!());
+    /// });
+    /// assert!(handle.join().is_err());
+    ///
+    /// // Poisoning propagates
+    /// let handle = thread::spawn(|| {
+    ///     INIT.call_once(|| {});
+    /// });
+    /// assert!(handle.join().is_err());
+    ///
+    /// // call_once_force will still run and reset the poisoned state
+    /// INIT.call_once_force(|state| {
+    ///     assert!(state.poisoned());
+    /// });
+    ///
+    /// // once any success happens, we stop propagating the poison
+    /// INIT.call_once(|| {});
+    /// ```
+    pub fn call_once_force<F: FnOnce(&OnceState)>(&self, f: F) {
+        let (_guard, s) = self.lock();
+
+        if s.finished() {
+            return;
+        }
+
+        f(&s);
+        let s = s.finish();
+        let s = s.unpoison();
+        self.state.store(s.state, Ordering::Relaxed);
+    }
+
     fn lock(&self) -> (OnceGuard, OnceState) {
         let mut expected = OnceState::default();
         loop {
