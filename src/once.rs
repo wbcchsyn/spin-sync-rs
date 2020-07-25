@@ -1,5 +1,5 @@
 use crate::misc::PhantomOnce;
-use std::sync::atomic::AtomicU8;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 /// A synchronization primitive which can be used to run a one-time global initialization.
 ///
@@ -22,6 +22,20 @@ impl Once {
 
 struct OnceGuard<'a> {
     once: &'a Once,
+}
+
+impl Drop for OnceGuard<'_> {
+    fn drop(&mut self) {
+        let mut s = OnceState::new(self.once.state.load(Ordering::Relaxed));
+        debug_assert!(s.locked());
+
+        if std::thread::panicking() {
+            s = s.poison();
+        }
+
+        s = s.release_lock();
+        self.once.state.store(s.state, Ordering::Release);
+    }
 }
 
 /// State yielded to `call_once_force`’s closure parameter. The state can be used to query
