@@ -19,6 +19,64 @@ impl Once {
         }
     }
 
+    /// Performs an initialization routine once and only once. The given closure will be executed
+    /// if this is the first time `call_once` has been called, and otherwise the routine will not be invoked.
+    ///
+    /// This method will block the calling thread if another initialization routine is currently running.
+    ///
+    /// When this function returns, it is guaranteed that some initialization has run and completed
+    /// (it may not be the closure specified). It is also guaranteed that any memory writes performed
+    /// by the executed closure can be reliably observed by other threads at this point (there is a happens-before
+    /// relation between the closure and code executing after the return).
+    ///
+    /// If the given closure recursively invokes `call_once` on the same `Once` instance the exact behavior
+    /// is not specified, allowed outcomes are a panic or a deadlock.
+    ///
+    /// # Examples
+    ///
+    /// `Once` enable to access static mut data safely.
+    ///
+    /// ```
+    /// use spin_sync::Once;
+    ///
+    /// static mut CACHE: usize = 0;
+    /// static INIT: Once = Once::new();
+    ///
+    /// fn expensive_calculation(val: usize) -> usize {
+    ///     unsafe {
+    ///         INIT.call_once(|| { CACHE = val; });
+    ///         CACHE
+    ///     }
+    /// }
+    ///
+    /// // INIT.call_once() invokes the closure and set the CACHE.
+    /// assert_eq!(1, expensive_calculation(1));
+    ///
+    /// // INIT.call_once() do nothing and return the CACHE.
+    /// assert_eq!(1, expensive_calculation(2));
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// The closure f will only be executed once if this is called concurrently among
+    /// many threads. If that closure panics, however, then it will poison this `Once` instance,
+    /// causing all future invocations of `call_once` to also panic.
+    pub fn call_once<F: FnOnce()>(&self, f: F) {
+        let (_guard, s) = self.lock();
+
+        if s.poisoned() {
+            panic!("`Once.call_once()' is called while the instance is poisoned.");
+        }
+
+        if s.finished() {
+            return;
+        }
+
+        f();
+        let s = s.finish();
+        self.state.store(s.state, Ordering::Relaxed);
+    }
+
     fn lock(&self) -> (OnceGuard, OnceState) {
         let mut expected = OnceState::default();
         loop {
