@@ -5,7 +5,7 @@ spin-sync is a module providing synchronization primitives using spinlock. ([Wik
 
 The main features are as follows.
 
-* Declaring public structs `Mutex` and `RwLock` , whose interfaces are resembles those of `std::sync` .
+* Declaring public structs `Mutex` , `RwLock` , and `Once` . The interfaces are resembles those of `std::sync` .
 * Ensuring safety as much as `std::sync` , including poisoning strategy and marker traits.
 
 ## How to use
