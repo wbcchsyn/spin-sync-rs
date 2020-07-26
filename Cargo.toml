@@ -7,7 +7,6 @@ edition = "2018"
 description = """
 Synchronization primitives using spinlock.
 The interface resembles std::sync.
-rust nightly version is required so far.
 """
 
 readme = "README.md"
