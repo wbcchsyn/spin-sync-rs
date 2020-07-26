@@ -126,11 +126,11 @@ impl<T> Mutex<T> {
     ///
     /// let mutex = Mutex::new(0);
     /// ```
-    pub fn new(t: T) -> Self {
+    pub const fn new(t: T) -> Self {
         Mutex {
             lock: AtomicU8::new(INIT),
             data: UnsafeCell::new(t),
-            _phantom: Default::default(),
+            _phantom: PhantomMutex {},
         }
     }
 

@@ -103,15 +103,11 @@ impl<T> RwLock<T> {
     ///
     /// let lock = RwLock::new(5);
     /// ```
-    pub fn new(t: T) -> Self {
-        let lock = AtomicU64::new(INIT);
-        let data = UnsafeCell::new(t);
-        let _phantom = Default::default();
-
+    pub const fn new(t: T) -> Self {
         Self {
-            lock,
-            data,
-            _phantom,
+            lock: AtomicU64::new(INIT),
+            data: UnsafeCell::new(t),
+            _phantom: PhantomRwLock {},
         }
     }
 
