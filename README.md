@@ -133,3 +133,40 @@ fn main() {
     assert_eq!(2 * WORKER_NUM, *num);
 }
 ```
+
+### Once
+
+`Once.call_once` executes the given closure at least once and only once. It also
+guaratees that the closure has finished when it returned; i.e. any memory write can be
+reliably observed by the other threads at that point.
+
+`Once` acquires lock internally, so we can access to static mut data safely.
+
+```
+extern crate spin_sync;
+
+use spin_sync::Once;
+
+static mut CACHE: Option<usize> = None;
+static INIT: Once = Once::new();
+
+/// Acquire the cached value.
+/// If the cache is not initialized, this function substitutes
+/// the argument val for the cache.
+///
+/// This function is thread safe.
+fn get_cache(val: usize) -> usize {
+    unsafe {
+        INIT.call_once(|| CACHE = Some(val));
+        CACHE.unwrap()
+    }
+}
+
+fn main() {
+    // Initialize cache 5.
+    assert_eq!(5, get_cache(5));
+
+    // Just return cached value.
+    assert_eq!(5, get_cache(10));
+}
+```
