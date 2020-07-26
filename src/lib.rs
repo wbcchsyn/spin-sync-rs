@@ -7,6 +7,8 @@
 //!
 //! * Declaring public structs `Mutex` , `RwLock` , and `Once` . The interfaces are resembles those of `std::sync` .
 //! * Ensuring safety as much as `std::sync` , including poisoning strategy and marker traits.
+//! * Unlike to `std::sync`, functions `Mutex::new` and `RwLock::new` are const; i.e. it is possible to declare
+//!   static `Mutex<T>` and static `RwLock<T>` variables as long as T can be constructed statically.
 //!
 //! ## How to use
 //!
