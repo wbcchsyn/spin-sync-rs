@@ -25,3 +25,42 @@ The main features are as follows.
    cargo test
    cargo run
    ```
+
+## Examples
+
+Declare `static spin_sync::Mutex<u64>` variable and update from multi threads.
+It is impossible in case of `std::sync::Mutex` .
+
+```
+extern crate spin_sync;
+
+use spin_sync::Mutex;
+use std::thread;
+
+// Declare static mut Mutex<u64> variable.
+static COUNT: Mutex<u64> = Mutex::new(0);
+
+fn main() {
+    let num_thread = 10;
+    let mut handles = Vec::new();
+    
+    // Create worker threads to inclement COUNT by 1.
+    for _ in 0..10 {
+        let handle = thread::spawn(move || {
+            let mut count = COUNT.lock().unwrap();
+            *count += 1;
+        });
+
+        handles.push(handle);
+    }
+
+    // Wait for all the workers.
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    // Make sure the value is incremented by the worker count.
+    let count = COUNT.lock().unwrap();
+    assert_eq!(num_thread, *count);
+}
+```
