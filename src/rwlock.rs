@@ -10,6 +10,8 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// A reader-writer lock.
 ///
 /// It behaves like std::sync::RwLock except for using spinlock.
+/// What is more, the constructor is a const function; i.e. it is possible to declare
+/// `static RwLock<T>` variable as long as the inner data can be built statically.
 ///
 /// This type of lock allows either a number of readers or at most one writer
 /// at the same time. Readers are allowed read-only access (shared access)
@@ -46,16 +48,13 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// const WORKER_NUM: usize = 10;
 /// let mut handles = Vec::with_capacity(WORKER_NUM);
 ///
-/// // Decrare a variable protected by RwLock.
-/// // It is wrapped in std::Arc to share this instance itself among threads.
-/// let rwlock = Arc::new(RwLock::new(0));
+/// // We can declare static RwLock<usize> variable because RwLock::new is a const function.
+/// static RWLOCK: RwLock<usize> = RwLock::new(0);
 ///
 /// // Create worker threads to inclement the value by 2.
 /// for _ in 0..WORKER_NUM {
-///     let c_rwlock = rwlock.clone();
-///
 ///     let handle = thread::spawn(move || {
-///         let mut num = c_rwlock.write().unwrap();
+///         let mut num = RWLOCK.write().unwrap();
 ///         *num += 2;
 ///     });
 ///
@@ -68,7 +67,7 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// // Enclosing the lock with `{}` to drop it before waiting for the worker
 /// // threads; otherwise, deadlocks could be occurred.
 /// {
-///     let num = rwlock.read().unwrap();
+///     let num = RWLOCK.read().unwrap();
 ///     assert_eq!(0, *num % 2);
 /// }
 ///
@@ -78,7 +77,7 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// }
 ///
 /// // Make sure the value is incremented by 2 times the worker count.
-/// let num = rwlock.read().unwrap();
+/// let num = RWLOCK.read().unwrap();
 /// assert_eq!(2 * WORKER_NUM, *num);
 /// ```
 pub struct RwLock<T: ?Sized> {
@@ -98,8 +97,18 @@ impl<T> RwLock<T> {
     ///
     /// # Examples
     ///
+    /// Declare as a static variable.
+    ///
     /// ```
-    /// use std::sync::RwLock;
+    /// use spin_sync::RwLock;
+    ///
+    /// static LOCK: RwLock<i32> = RwLock::new(5);
+    /// ```
+    ///
+    /// Declare as a local variable.
+    ///
+    /// ```
+    /// use spin_sync::RwLock;
     ///
     /// let lock = RwLock::new(5);
     /// ```

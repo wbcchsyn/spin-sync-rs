@@ -10,6 +10,8 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// A mutual exclusion primitive useful for protecting shared data.
 ///
 /// It behaves like std::sync::Mutex except for using spinlock.
+/// What is more, the constructor is a const function; i.e. it is possible to declare
+/// static Mutex<T> variable as long as the inner data can be built statically.
 ///
 /// This mutex will block threads waiting for the lock to become available. The
 /// mutex can also be statically initialized or created via a [`new`]
@@ -46,22 +48,19 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 ///
 /// ```
 /// use spin_sync::Mutex;
-/// use std::sync::Arc;
 /// use std::thread;
 ///
 /// const WORKER_NUM: usize = 10;
-/// let mut handles = Vec::with_capacity(WORKER_NUM);
 ///
-/// // Decrare a variable protected by Mutex.
-/// // It is wrapped in std::Arc to share this mutex itself among threads.
-/// let mutex = Arc::new(Mutex::new(0));
+/// // We can declare static Mutex<usize> variable because Mutex::new is const.
+/// static MUTEX: Mutex<usize> = Mutex::new(0);
+///
+/// let mut handles = Vec::with_capacity(WORKER_NUM);
 ///
 /// // Create worker threads to inclement the value by 1.
 /// for _ in 0..WORKER_NUM {
-///     let mutex = mutex.clone();
-///
 ///     let handle = thread::spawn(move || {
-///         let mut num = mutex.lock().unwrap();
+///         let mut num = MUTEX.lock().unwrap();
 ///         *num += 1;
 ///     });
 ///
@@ -74,7 +73,7 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// }
 ///
 /// // Make sure the value is incremented by the worker count.
-/// let num = mutex.lock().unwrap();
+/// let num = MUTEX.lock().unwrap();
 /// assert_eq!(WORKER_NUM, *num);
 /// ```
 ///
@@ -85,6 +84,7 @@ use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 /// use std::sync::Arc;
 /// use std::thread;
 ///
+/// // Like std::sync::Mutex, it can be declare as local variable, of course.
 /// let mutex = Arc::new(Mutex::new(0));
 /// let c_mutex = mutex.clone();
 ///
@@ -119,10 +119,24 @@ pub struct Mutex<T: ?Sized> {
 
 impl<T> Mutex<T> {
     /// Creates a new mutex in an unlocked state ready for use.
+    ///
+    /// unlike to `std::sync::Mutex::new`, this is a const function.
+    /// It can be use for static variable.
+    ///
     /// # Examples
     ///
+    /// Declare as a static variable.
+    ///
     /// ```
-    /// use std::sync::Mutex;
+    /// use spin_sync::Mutex;
+    ///
+    /// static MUTEX: Mutex<i32> = Mutex::new(0);
+    /// ```
+    ///
+    /// Declare as a local variable.
+    ///
+    /// ```
+    /// use spin_sync::Mutex;
     ///
     /// let mutex = Mutex::new(0);
     /// ```
