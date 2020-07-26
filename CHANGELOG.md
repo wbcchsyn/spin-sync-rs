@@ -15,3 +15,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Added
 - `#[must_use]` modifier to struct MutexGuard, RwLockReadGuard, and RwLockWriteGuard (same to those of std::sync.)
 - change log (this file.)
+
+## 0.1.2 - 2020-07-26
+### Added
+- Create struct `Once`
