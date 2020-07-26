@@ -10,7 +10,7 @@ The interface resembles std::sync.
 """
 
 readme = "README.md"
-keywords = ["spin", "lock", "sync", "mutex", "rwlock"]
+keywords = ["spin", "lock", "sync", "mutex", "rwlock", "once"]
 documentation = "https://wbcchsyn.github.io/spin-sync-rs/index.html"
 
 license = "MIT"
