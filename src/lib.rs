@@ -65,6 +65,7 @@
 //! }
 //! ```
 
+mod barrier;
 mod misc;
 mod mutex;
 mod once;
