@@ -65,12 +65,14 @@
 //! }
 //! ```
 
+mod barrier;
 mod misc;
 mod mutex;
 mod once;
 mod result;
 mod rwlock;
 
+pub use crate::barrier::{Barrier, BarrierWaitResult};
 pub use crate::mutex::{Mutex, MutexGuard};
 pub use crate::once::{Once, OnceState};
 pub use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
