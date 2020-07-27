@@ -1,4 +1,4 @@
-use crate::misc::PhantomBarrier;
+use crate::misc::{PhantomBarrier, PhantomBarrierWaitResult};
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -36,7 +36,7 @@ impl Barrier {
                 }
 
                 if generation_id != current_id {
-                    return BarrierWaitResult(false);
+                    return BarrierWaitResult(false, PhantomBarrierWaitResult {});
                 } else {
                     std::thread::yield_now();
                 }
@@ -55,7 +55,7 @@ impl Barrier {
             // Release the lock.
             drop(guard);
 
-            BarrierWaitResult(true)
+            BarrierWaitResult(true, PhantomBarrierWaitResult {})
         }
     }
 
@@ -103,7 +103,7 @@ impl fmt::Debug for Barrier {
     }
 }
 
-pub struct BarrierWaitResult(bool);
+pub struct BarrierWaitResult(bool, PhantomBarrierWaitResult);
 
 impl BarrierWaitResult {
     pub fn is_leader(&self) -> bool {
