@@ -1,13 +1,32 @@
 use crate::misc::PhantomOnce;
+use std::fmt;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 /// A synchronization primitive which can be used to run a one-time global initialization.
 ///
 /// `Once` behaves like `std::sync::Once` except for using spinlock.
 /// Useful for one-time initialization for FFI or related functionality.
+///
+/// # Examples
+///
+/// ```
+/// use spin_sync::Once;
+///
+/// static INIT: Once = Once::new();
+///
+/// INIT.call_once(|| {
+///     // Do some initialization here.
+/// });
+/// ```
 pub struct Once {
     state: AtomicU8,
     _phantom: PhantomOnce,
+}
+
+impl fmt::Debug for Once {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.pad("Once { .. }")
+    }
 }
 
 impl Once {
@@ -20,7 +39,7 @@ impl Once {
     }
 
     /// Performs an initialization routine once and only once. The given closure will be executed
-    /// if this is the first time `call_once` has been called, and otherwise the routine will not be invoked.
+    /// if this is the first time [`call_once`] has been called, and otherwise the routine will not be invoked.
     ///
     /// This method will block the calling thread if another initialization routine is currently running.
     ///
@@ -29,8 +48,10 @@ impl Once {
     /// by the executed closure can be reliably observed by other threads at this point (there is a happens-before
     /// relation between the closure and code executing after the return).
     ///
-    /// If the given closure recursively invokes `call_once` on the same `Once` instance the exact behavior
+    /// If the given closure recursively invokes [`call_once`] on the same `Once` instance the exact behavior
     /// is not specified, allowed outcomes are a panic or a deadlock.
+    ///
+    /// [`call_once`]: #method.call_once
     ///
     /// # Examples
     ///
@@ -60,7 +81,9 @@ impl Once {
     ///
     /// The closure f will only be executed once if this is called concurrently among
     /// many threads. If that closure panics, however, then it will poison this `Once` instance,
-    /// causing all future invocations of `call_once` to also panic.
+    /// causing all future invocations of [`call_once`] to also panic.
+    ///
+    /// [`call_once`]: #method.call_once
     pub fn call_once<F: FnOnce()>(&self, f: F) {
         let (_guard, s) = self.lock();
 
@@ -77,15 +100,20 @@ impl Once {
         self.state.store(s.state, Ordering::Relaxed);
     }
 
-    /// Performs the same function as `call_once` except ignores poisoning.
+    /// Performs the same function as [`call_once`] except ignores poisoning.
     ///
-    /// Unlike `call_once`, if this `Once` has been poisoned (i.e., a previous call to `call_once`
-    /// or `call_once_force` caused a panic), calling `call_once_force` will still invoke the closure
+    /// Unlike [`call_once`], if this `Once` has been poisoned (i.e., a previous call to [`call_once`]
+    /// or [`call_once_force`] caused a panic), calling [`call_once_force`] will still invoke the closure
     /// f and will not result in an immediate panic. If f panics, the `Once` will remain in a poison state.
     /// If f does not panic, the `Once` will no longer be in a poison state and all future calls to
-    /// `call_once` or `call_once_force` will be no-ops.
+    /// [`call_once`] or [`call_once_force`] will be no-ops.
     ///
-    /// The closure f is yielded a `OnceState` structure which can be used to query the poison status of the `Once`.
+    ///
+    /// The closure f is yielded a [`OnceState`] structure which can be used to query the poison status of the `Once`.
+    ///
+    /// [`call_once`]: #method.call_once
+    /// [`call_once_force`]: #method.call_once_force
+    /// [`OnceState`]: struct.OnceState.html
     ///
     /// # Examples
     ///
@@ -128,17 +156,21 @@ impl Once {
         self.state.store(s.state, Ordering::Relaxed);
     }
 
-    /// Returns true if some `call_once` call has completed successfully.
-    /// Specifically, `is_completed` will return false in the following situations:
+    /// Returns true if some [`call_once`] call has completed successfully.
+    /// Specifically, [`is_completed`] will return false in the following situations:
     ///
-    /// * `call_once` was not called at all,
-    /// * `call_once` was called, but has not yet completed,
+    /// * Neither [`call_once`] nor [`call_once_force`] was not called at all,
+    /// * [`call_once`] or/and [`call_once_force`] was called, but has not yet completed,
     /// * the `Once` instance is poisoned
     ///
     /// This function returning false does not mean that `Once` has not been executed.
-    /// For example, it may have been executed in the time between when `is_completed`
+    /// For example, it may have been executed in the time between when [`is_completed`]
     /// starts executing and when it returns, in which case the false return value would
     /// be stale (but still permissible).
+    ///
+    /// [`call_once`]: #method.call_once
+    /// [`call_once_force`]: #method.call_once_force
+    /// [`is_completed`]: #method.is_completed
     ///
     /// # Examples
     ///
@@ -224,8 +256,12 @@ impl Drop for OnceGuard<'_> {
     }
 }
 
-/// State yielded to `call_once_force`’s closure parameter. The state can be used to query
-/// the poison status of the `Once`
+/// State yielded to [`call_once_force`] ’s closure parameter. The state can be used to query
+/// the poison status of the [`Once`]
+///
+/// [`call_once_force`]: struct.Once.html#method.call_once_force
+/// [`Once`]: struct.Once.html
+#[derive(Debug)]
 pub struct OnceState {
     state: u8,
 }
@@ -257,8 +293,11 @@ impl OnceState {
     }
 
     #[must_use]
-    /// Returns true if the associated `Once` was poisoned prior to the invocation of the closure
-    /// passed to `call_once_force`.
+    /// Returns true if the associated [`Once`] was poisoned prior to the invocation of the closure
+    /// passed to [`call_once_force`] .
+    ///
+    /// [`Once`]: struct.Once.html
+    /// [`call_once_force`]: struct.Once.html#method.call_once_force
     pub const fn poisoned(&self) -> bool {
         (self.state & Self::POISONED) != 0
     }
