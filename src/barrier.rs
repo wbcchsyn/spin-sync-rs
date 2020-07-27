@@ -130,6 +130,43 @@ impl Barrier {
         }
     }
 
+    /// Blocks the current thread until all threads have rendezvoused here.
+    ///
+    /// Barriers are re-usable after all threads have rendezvoused once, and can
+    /// be used continuously.
+    ///
+    /// A single (arbitrary) thread will receive a [`BarrierWaitResult`] that
+    /// returns `true` from [`is_leader`] when returning from this function, and
+    /// all other threads will receive a result that will return `false` from
+    /// [`is_leader`].
+    ///
+    /// [`BarrierWaitResult`]: struct.BarrierWaitResult.html
+    /// [`is_leader`]: struct.BarrierWaitResult.html#method.is_leader
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::Barrier;
+    /// use std::thread;
+    ///
+    /// static NUM_THREADS: usize = 10;
+    /// static BARRIER: Barrier = Barrier::new(NUM_THREADS);
+    ///
+    /// let mut handles = Vec::with_capacity(10);
+    /// for _ in 0..10 {
+    ///     // The same messages will be printed together.
+    ///     // You will NOT see any interleaving.
+    ///     handles.push(thread::spawn(move|| {
+    ///         println!("before wait");
+    ///         BARRIER.wait();
+    ///         println!("after wait");
+    ///     }));
+    /// }
+    /// // Wait for other threads to finish.
+    /// for handle in handles {
+    ///     handle.join().unwrap();
+    /// }
+    /// ```
     pub fn wait(&self) -> BarrierWaitResult {
         let (guard, generation_id) = self.lock();
 
