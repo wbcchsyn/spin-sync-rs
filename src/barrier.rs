@@ -5,3 +5,5 @@ pub struct Barrier {
     count: AtomicUsize,
     generation_id: AtomicUsize, // MSB plays lock flag role.
 }
+
+pub struct BarrierWaitResult(bool);
