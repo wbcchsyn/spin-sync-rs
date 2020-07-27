@@ -17,3 +17,7 @@ impl Barrier {
 }
 
 pub struct BarrierWaitResult(bool);
+
+struct BarrierLockGuard<'a> {
+    generation_id: &'a AtomicUsize,
+}
