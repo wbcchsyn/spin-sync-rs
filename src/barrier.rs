@@ -102,6 +102,12 @@ impl fmt::Debug for Barrier {
 
 pub struct BarrierWaitResult(bool);
 
+impl BarrierWaitResult {
+    pub fn is_leader(&self) -> bool {
+        self.0
+    }
+}
+
 struct BarrierLockGuard<'a> {
     generation_id: &'a AtomicUsize,
 }
