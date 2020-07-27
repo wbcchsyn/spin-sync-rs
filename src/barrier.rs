@@ -254,6 +254,22 @@ impl fmt::Debug for Barrier {
 pub struct BarrierWaitResult(bool, PhantomBarrierWaitResult);
 
 impl BarrierWaitResult {
+    /// Returns `true` if this thread from [`wait`] is the "leader thread".
+    ///
+    /// Only one thread will have `true` returned from their result, all other
+    /// threads will have `false` returned.
+    ///
+    /// [`wait`]: struct.Barrier.html#method.wait
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::sync::Barrier;
+    ///
+    /// let barrier = Barrier::new(1);
+    /// let barrier_wait_result = barrier.wait();
+    /// assert!(barrier_wait_result.is_leader());
+    /// ```
     pub fn is_leader(&self) -> bool {
         self.0
     }
