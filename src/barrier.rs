@@ -14,6 +14,43 @@ impl Barrier {
             generation_id: AtomicUsize::new(0),
         }
     }
+
+    fn lock(&self) -> (BarrierLockGuard, usize) {
+        // Acquire lock
+        let mut expected = 0;
+        loop {
+            let desired = expected + BarrierLockGuard::MSB;
+
+            let current = self
+                .generation_id
+                .compare_and_swap(expected, desired, Ordering::Acquire);
+
+            if current == expected {
+                // Succeeded to lock
+                break;
+            } else {
+                // Failed to lock.
+                // Retry.
+                if (current & BarrierLockGuard::MSB) != 0 {
+                    // Another thread is holding the lock.
+                    // Wait for a while and retry.
+                    expected = current - BarrierLockGuard::MSB;
+                    std::thread::yield_now();
+                } else {
+                    // Just the first assumption was wrong.
+                    // Retry immediately.
+                    expected = current;
+                }
+            }
+        }
+
+        (
+            BarrierLockGuard {
+                generation_id: &self.generation_id,
+            },
+            expected,
+        )
+    }
 }
 
 pub struct BarrierWaitResult(bool);
@@ -23,7 +60,7 @@ struct BarrierLockGuard<'a> {
 }
 
 impl BarrierLockGuard<'_> {
-    const MSB: usize = usize::MAX / 2 + 1;
+    pub const MSB: usize = usize::MAX / 2 + 1;
 }
 
 impl Drop for BarrierLockGuard<'_> {
