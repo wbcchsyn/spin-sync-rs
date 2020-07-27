@@ -93,6 +93,34 @@ pub struct Barrier {
 }
 
 impl Barrier {
+    /// Creates a new barrier that can block a given number of threads.
+    ///
+    /// Unlike to `std::sync::Barrier::new`, this function is const; i.e.
+    /// static [`Barrier`] variable can be declared.
+    ///
+    /// A barrier will block `n`-1 threads which call [`wait`] and then wake up
+    /// all threads at once when the `n`th thread calls [`wait`].
+    ///
+    /// [`Barrier`]: struct.Barrier.html
+    /// [`wait`]: #method.wait
+    ///
+    /// # Examples
+    ///
+    /// Declaring [`Barrier`] instance as a local variable.
+    ///
+    /// ```
+    /// use spin_sync::Barrier;
+    ///
+    /// let barrier = Barrier::new(10);
+    /// ```
+    ///
+    /// Declaring static [`Barrier`] variable.
+    ///
+    /// ```
+    /// use spin_sync::Barrier;
+    ///
+    /// static BARRIER: Barrier = Barrier::new(5);
+    /// ```
     pub const fn new(n: usize) -> Self {
         Self {
             num_threads: n,
