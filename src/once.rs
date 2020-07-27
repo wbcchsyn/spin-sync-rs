@@ -1,4 +1,5 @@
 use crate::misc::PhantomOnce;
+use std::fmt;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 /// A synchronization primitive which can be used to run a one-time global initialization.
@@ -20,6 +21,12 @@ use std::sync::atomic::{AtomicU8, Ordering};
 pub struct Once {
     state: AtomicU8,
     _phantom: PhantomOnce,
+}
+
+impl fmt::Debug for Once {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.pad("Once { .. }")
+    }
 }
 
 impl Once {
