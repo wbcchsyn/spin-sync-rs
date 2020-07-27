@@ -2,6 +2,89 @@ use crate::misc::{PhantomBarrier, PhantomBarrierWaitResult};
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+/// A barrier enables multiple threads to synchronize the beginning
+/// of some computation.
+///
+/// The behavior is same to `std::sync::Barrier` except for this uses spinlock.
+///
+/// Unlike to `std::sync::Barrier::new`, the constructor [`Barrier.new`] is a const function;
+/// i.e. static [`Barrier`] variable can be declared.
+///
+/// [`Barrier`]: struct.Barrier.html
+/// [`Barrier.new`]: #method.new
+///
+/// # Examples
+///
+/// ```
+/// use spin_sync::Barrier;
+/// use std::thread;
+///
+/// static NUM_THREADS: usize = 10;
+/// static BARRIER: Barrier = Barrier::new(NUM_THREADS);
+///
+/// let mut handles = Vec::with_capacity(10);
+/// for _ in 0..10 {
+///     // The same messages will be printed together.
+///     // You will NOT see any interleaving.
+///     handles.push(thread::spawn(move|| {
+///         println!("before wait");
+///         BARRIER.wait();
+///         println!("after wait");
+///     }));
+/// }
+/// // Wait for other threads to finish.
+/// for handle in handles {
+///     handle.join().unwrap();
+/// }
+/// ```
+///
+/// Once all the threads have finished to wait, `Barrier` is reinitialized.
+/// The same instance can be used again.
+///
+/// ```
+/// use spin_sync::Barrier;
+/// use std::thread;
+///
+/// static NUM_THREADS: usize = 10;
+/// static BARRIER: Barrier = Barrier::new(NUM_THREADS);
+///
+/// fn wait_and_reinitialize() {
+///     let mut handles = Vec::with_capacity(10);
+///     for _ in 0..10 {
+///         // The same messages will be printed together.
+///         // You will NOT see any interleaving.
+///         handles.push(thread::spawn(move|| {
+///             println!("before wait");
+///             BARRIER.wait();
+///             println!("after wait");
+///         }));
+///     }
+///     // Wait for other threads to finish.
+///     for handle in handles {
+///         handle.join().unwrap();
+///     }
+/// }
+///
+/// fn main() {
+///     // First use.
+///     wait_and_reinitialize();
+///     // Second use.
+///     wait_and_reinitialize();
+/// }
+/// ```
+///
+/// If 0 or 1 is passed to `Barrier::new`, the instance will never block.
+///
+/// ```
+/// use spin_sync::Barrier;
+/// use std::thread;
+///
+/// static BARRIER0: Barrier = Barrier::new(0);
+/// static BARRIER1: Barrier = Barrier::new(1);
+///
+/// BARRIER0.wait();
+/// BARRIER1.wait();
+/// ```
 pub struct Barrier {
     num_threads: usize, // immutable
     count: AtomicUsize,
