@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub struct Barrier {
@@ -90,6 +91,12 @@ impl Barrier {
             },
             expected,
         )
+    }
+}
+
+impl fmt::Debug for Barrier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.pad("Barrier { .. }")
     }
 }
 
