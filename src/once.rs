@@ -5,6 +5,18 @@ use std::sync::atomic::{AtomicU8, Ordering};
 ///
 /// `Once` behaves like `std::sync::Once` except for using spinlock.
 /// Useful for one-time initialization for FFI or related functionality.
+///
+/// # Examples
+///
+/// ```
+/// use spin_sync::Once;
+///
+/// static INIT: Once = Once::new();
+///
+/// INIT.call_once(|| {
+///     // Do some initialization here.
+/// });
+/// ```
 pub struct Once {
     state: AtomicU8,
     _phantom: PhantomOnce,
