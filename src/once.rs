@@ -261,6 +261,7 @@ impl Drop for OnceGuard<'_> {
 ///
 /// [`call_once_force`]: struct.Once.html#method.call_once_force
 /// [`Once`]: struct.Once.html
+#[derive(Debug)]
 pub struct OnceState {
     state: u8,
 }
