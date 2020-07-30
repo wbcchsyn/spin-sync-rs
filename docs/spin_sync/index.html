@@ -1,16 +1,18 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `spin_sync` crate."><meta name="keywords" content="rust, rustlang, rust-lang, spin_sync"><title>spin_sync - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../spin_sync/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><p class='location'>Crate spin_sync</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all spin_sync's items</p></a><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'spin_sync', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/spin_sync/lib.rs.html#1-144' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>spin_sync</a></span></h1><div class='docblock'><p><a href="https://circleci.com/gh/wbcchsyn/spin-sync-rs"><img src="https://circleci.com/gh/wbcchsyn/spin-sync-rs.svg?style=svg" alt="CircleCI" /></a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `spin_sync` crate."><meta name="keywords" content="rust, rustlang, rust-lang, spin_sync"><title>spin_sync - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../spin_sync/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><p class='location'>Crate spin_sync</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all spin_sync's items</p></a><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'spin_sync', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/spin_sync/lib.rs.html#1-79' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>spin_sync</a></span></h1><div class='docblock'><p><a href="https://circleci.com/gh/wbcchsyn/spin-sync-rs"><img src="https://circleci.com/gh/wbcchsyn/spin-sync-rs.svg?style=svg" alt="CircleCI" /></a>
 <a href="https://travis-ci.org/wbcchsyn/spin-sync-rs"><img src="https://travis-ci.org/wbcchsyn/spin-sync-rs.svg?branch=master" alt="Build Status" /></a></p>
 <p>spin-sync is a module providing synchronization primitives using spinlock. (<a href="https://en.wikipedia.org/wiki/Spinlock">Wikipedia Spinlock</a>)</p>
 <p>The main features are as follows.</p>
 <ul>
-<li>Declaring public structs <code>Mutex</code> and <code>RwLock</code>, whose interfaces are resembles those of <code>std::sync</code>.</li>
-<li>Ensuring safety as much as <code>std::sync</code>, including poisoning strategy and marker traits.</li>
+<li>Declaring public structs <code>Mutex</code> , <code>RwLock</code> , <code>Once</code> , <code>Barrier</code> . The interfaces are resembles those of <code>std::sync</code> .</li>
+<li>Ensuring safety as much as <code>std::sync</code> , including poisoning strategy and marker traits.</li>
+<li>Unlike to <code>std::sync</code>, the constructors of the public structs are const; i.e. it is possible to declare
+static <code>Mutex&lt;T&gt;</code> as long as T can be build statically.</li>
 </ul>
 <h2 id="how-to-use" class="section-header"><a href="#how-to-use">How to use</a></h2>
 <ol>
 <li>
 <p>Add the following line in dependencies section in your Cargo.toml.</p>
-<pre><code class="language-Cargo.toml">spin-sync = &quot;0.1.1&quot;
+<pre><code class="language-Cargo.toml">spin-sync = &quot;0.2.0&quot;
 </code></pre>
 </li>
 <li>
@@ -21,108 +23,50 @@ cargo run
 </code></pre>
 </li>
 </ol>
-<h2 id="examples" class="section-header"><a href="#examples">Examples</a></h2><h3 id="mutex" class="section-header"><a href="#mutex">Mutex<T></a></h3>
-<p><code>Mutex::lock()</code> acquires the exclusive lock and returns an RAII guard object. The lock will be released when the guard is dropped (falls out of scope.)</p>
-<p>The data protected by the mutex can be accessed through this guard via its <code>Defer</code> and <code>DeferMut</code> implementations.</p>
+<h2 id="examples" class="section-header"><a href="#examples">Examples</a></h2>
+<p>Declare <code>static spin_sync::Mutex&lt;u64&gt;</code> variable and update from multi threads.
+It is impossible in case of <code>std::sync::Mutex</code> .</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">spin_sync</span>;
 
 <span class="kw">use</span> <span class="ident">spin_sync</span>::<span class="ident">Mutex</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">thread</span>;
 
-<span class="doccomment">/// Create a variable protected by a Mutex, increment it in worker threads,</span>
-<span class="doccomment">/// and check the variable was updated rightly.</span>
+<span class="comment">// Declare static mut Mutex&lt;u64&gt; variable.</span>
+<span class="kw">static</span> <span class="ident">COUNT</span>: <span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="number">0</span>);
+
 <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">const</span> <span class="ident">WORKER_NUM</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">10</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handles</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">WORKER_NUM</span>);
-
-    <span class="comment">// Decrare a variable protected by Mutex.</span>
-    <span class="comment">// It is wrapped in std::Arc to share this mutex itself among threads.</span>
-    <span class="kw">let</span> <span class="ident">mutex</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="number">0</span>));
-
-    <span class="comment">// Create worker threads to inclement the value by 1.</span>
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">WORKER_NUM</span> {
-        <span class="kw">let</span> <span class="ident">mutex</span> <span class="op">=</span> <span class="ident">mutex</span>.<span class="ident">clone</span>();
-
+    <span class="kw">let</span> <span class="ident">num_thread</span> <span class="op">=</span> <span class="number">10</span>;
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handles</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
+     
+    <span class="comment">// Create worker threads to inclement COUNT by 1.</span>
+    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
         <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">thread</span>::<span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">mutex</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-            <span class="kw-2">*</span><span class="ident">num</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">COUNT</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+            <span class="kw-2">*</span><span class="ident">count</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
         });
 
         <span class="ident">handles</span>.<span class="ident">push</span>(<span class="ident">handle</span>);
     }
 
-    <span class="comment">// Wait for the all worker threads are finished.</span>
+    <span class="comment">// Wait for all the workers.</span>
     <span class="kw">for</span> <span class="ident">handle</span> <span class="kw">in</span> <span class="ident">handles</span> {
         <span class="ident">handle</span>.<span class="ident">join</span>().<span class="ident">unwrap</span>();
     }
 
     <span class="comment">// Make sure the value is incremented by the worker count.</span>
-    <span class="kw">let</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">mutex</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">WORKER_NUM</span>, <span class="kw-2">*</span><span class="ident">num</span>);
-}</pre></div>
-<h3 id="rwlock" class="section-header"><a href="#rwlock">RwLock<T></a></h3>
-<p><code>RwLock</code> resembles <code>Mutex</code> except for it distinguishes readers and writers.</p>
-<p><code>RwLock::write()</code> behaves like <code>Mutex::lock()</code>.
-It acquires the exclusive write lock and returns an RAII guard object. The lock will be released when the guard is dropped (falls out of scope.)
-This guard allows read/write access (exclusive access) to the underlying data via its <code>Defer</code> and <code>DeferMut</code> implementations.</p>
-<p><code>RwLock::read()</code> behaves like <code>RwLock::write()</code> except for it acquires a shared read lock
-(i.e. this method allows any number of readers to hold a shared read lock at the same time as long as no writer is not holding the exclusive write lock.)
-This guard allows read-only access (shared access) to the underlying data via its <code>Defer</code> implementation.</p>
-
-<div class="example-wrap"><pre class="rust rust-example-rendered">
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">spin_sync</span>;
-
-<span class="kw">use</span> <span class="ident">spin_sync</span>::<span class="ident">RwLock</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">thread</span>;
-
-<span class="doccomment">/// Create a variable protected by a RwLock, increment it by 2 in worker threads,</span>
-<span class="doccomment">/// and check the variable was updated rightly.</span>
-<span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">const</span> <span class="ident">WORKER_NUM</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">10</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handles</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="ident">WORKER_NUM</span>);
-
-    <span class="comment">// Decrare a variable protected by RwLock.</span>
-    <span class="comment">// It is wrapped in std::Arc to share this instance itself among threads.</span>
-    <span class="kw">let</span> <span class="ident">rwlock</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">RwLock</span>::<span class="ident">new</span>(<span class="number">0</span>));
-
-    <span class="comment">// Create worker threads to inclement the value by 2.</span>
-    <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">WORKER_NUM</span> {
-        <span class="kw">let</span> <span class="ident">c_rwlock</span> <span class="op">=</span> <span class="ident">rwlock</span>.<span class="ident">clone</span>();
-
-        <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">thread</span>::<span class="ident">spawn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">c_rwlock</span>.<span class="ident">write</span>().<span class="ident">unwrap</span>();
-            <span class="kw-2">*</span><span class="ident">num</span> <span class="op">+</span><span class="op">=</span> <span class="number">2</span>;
-        });
-
-        <span class="ident">handles</span>.<span class="ident">push</span>(<span class="ident">handle</span>);
-    }
-
-    <span class="comment">// Make sure the value is always multipile of 2 even if some worker threads</span>
-    <span class="comment">// are working (it is incremented by 2.)</span>
-    <span class="comment">//</span>
-    <span class="comment">// Enclosing the lock with `{}` to drop it before waiting for the worker</span>
-    <span class="comment">// threads; otherwise, deadlocks could be occurred.</span>
-    {
-        <span class="kw">let</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">rwlock</span>.<span class="ident">read</span>().<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">0</span>, <span class="kw-2">*</span><span class="ident">num</span> <span class="op">%</span> <span class="number">2</span>);
-    }
-
-    <span class="comment">// Wait for the all worker threads are finished.</span>
-    <span class="kw">for</span> <span class="ident">handle</span> <span class="kw">in</span> <span class="ident">handles</span> {
-        <span class="ident">handle</span>.<span class="ident">join</span>().<span class="ident">unwrap</span>();
-    }
-
-    <span class="comment">// Make sure the value is incremented by 2 times the worker count.</span>
-    <span class="kw">let</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">rwlock</span>.<span class="ident">read</span>().<span class="ident">unwrap</span>();
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">2</span> <span class="op">*</span> <span class="ident">WORKER_NUM</span>, <span class="kw-2">*</span><span class="ident">num</span>);
+    <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">COUNT</span>.<span class="ident">lock</span>().<span class="ident">unwrap</span>();
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">num_thread</span>, <span class="kw-2">*</span><span class="ident">count</span>);
 }</pre></div>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
-<table><tr class='module-item'><td><a class="struct" href="struct.Mutex.html" title='spin_sync::Mutex struct'>Mutex</a></td><td class='docblock-short'><p>A mutual exclusion primitive useful for protecting shared data.</p>
+<table><tr class='module-item'><td><a class="struct" href="struct.Barrier.html" title='spin_sync::Barrier struct'>Barrier</a></td><td class='docblock-short'><p>A barrier enables multiple threads to synchronize the beginning
+of some computation.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.BarrierWaitResult.html" title='spin_sync::BarrierWaitResult struct'>BarrierWaitResult</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="struct" href="struct.Mutex.html" title='spin_sync::Mutex struct'>Mutex</a></td><td class='docblock-short'><p>A mutual exclusion primitive useful for protecting shared data.</p>
 </td></tr><tr class='module-item'><td><a class="struct" href="struct.MutexGuard.html" title='spin_sync::MutexGuard struct'>MutexGuard</a></td><td class='docblock-short'><p>An RAII implementation of a &quot;scoped lock&quot; of a mutex.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Once.html" title='spin_sync::Once struct'>Once</a></td><td class='docblock-short'><p>A synchronization primitive which can be used to run a one-time global initialization.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.OnceState.html" title='spin_sync::OnceState struct'>OnceState</a></td><td class='docblock-short'><p>State yielded to <a href="struct.Once.html#method.call_once_force"><code>call_once_force</code></a> ’s closure parameter. The state can be used to query
+the poison status of the <a href="struct.Once.html"><code>Once</code></a></p>
 </td></tr><tr class='module-item'><td><a class="struct" href="struct.RwLock.html" title='spin_sync::RwLock struct'>RwLock</a></td><td class='docblock-short'><p>A reader-writer lock.</p>
 </td></tr><tr class='module-item'><td><a class="struct" href="struct.RwLockReadGuard.html" title='spin_sync::RwLockReadGuard struct'>RwLockReadGuard</a></td><td class='docblock-short'><p>An RAII implementation of a &quot;scoped shared read lock&quot; of a RwLock.</p>
 </td></tr><tr class='module-item'><td><a class="struct" href="struct.RwLockWriteGuard.html" title='spin_sync::RwLockWriteGuard struct'>RwLockWriteGuard</a></td><td class='docblock-short'><p>An RAII implementation of a &quot;scoped exclusive write lock&quot; of a RwLock.</p>
@@ -131,4 +75,4 @@ This guard allows read-only access (shared access) to the underlying data via it
 </td></tr><tr class='module-item'><td><a class="type" href="type.PoisonError.html" title='spin_sync::PoisonError type'>PoisonError</a></td><td class='docblock-short'><p>Alias to std::sync::PoisonError</p>
 </td></tr><tr class='module-item'><td><a class="type" href="type.TryLockError.html" title='spin_sync::TryLockError type'>TryLockError</a></td><td class='docblock-short'><p>Alias to std::sync::TryLockError</p>
 </td></tr><tr class='module-item'><td><a class="type" href="type.TryLockResult.html" title='spin_sync::TryLockResult type'>TryLockResult</a></td><td class='docblock-short'><p>Alias to std::sync::TryLockResult</p>
-</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "spin_sync";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>
+</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../";window.currentCrate = "spin_sync";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/rwlock.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rwlock.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../spin_sync/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/rwlock.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>rwlock.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../spin_sync/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -815,6 +815,17 @@
 <span id="815">815</span>
 <span id="816">816</span>
 <span id="817">817</span>
+<span id="818">818</span>
+<span id="819">819</span>
+<span id="820">820</span>
+<span id="821">821</span>
+<span id="822">822</span>
+<span id="823">823</span>
+<span id="824">824</span>
+<span id="825">825</span>
+<span id="826">826</span>
+<span id="827">827</span>
+<span id="828">828</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">UnsafeCell</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
@@ -822,12 +833,14 @@
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">panic</span>::{<span class="ident">RefUnwindSafe</span>, <span class="ident">UnwindSafe</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">atomic</span>::{<span class="ident">AtomicU64</span>, <span class="ident">Ordering</span>};
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">misc</span>::<span class="ident">PhantomNotSend</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">misc</span>::{<span class="ident">PhantomRwLock</span>, <span class="ident">PhantomRwLockReadGuard</span>, <span class="ident">PhantomRwLockWriteGuard</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">result</span>::{<span class="ident">LockResult</span>, <span class="ident">PoisonError</span>, <span class="ident">TryLockError</span>, <span class="ident">TryLockResult</span>};
 
 <span class="doccomment">/// A reader-writer lock.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// It behaves like std::sync::RwLock except for using spinlock.</span>
+<span class="doccomment">/// What is more, the constructor is a const function; i.e. it is possible to declare</span>
+<span class="doccomment">/// `static RwLock&lt;T&gt;` variable as long as the inner data can be built statically.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This type of lock allows either a number of readers or at most one writer</span>
 <span class="doccomment">/// at the same time. Readers are allowed read-only access (shared access)</span>
@@ -864,16 +877,13 @@
 <span class="doccomment">/// const WORKER_NUM: usize = 10;</span>
 <span class="doccomment">/// let mut handles = Vec::with_capacity(WORKER_NUM);</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// // Decrare a variable protected by RwLock.</span>
-<span class="doccomment">/// // It is wrapped in std::Arc to share this instance itself among threads.</span>
-<span class="doccomment">/// let rwlock = Arc::new(RwLock::new(0));</span>
+<span class="doccomment">/// // We can declare static RwLock&lt;usize&gt; variable because RwLock::new is a const function.</span>
+<span class="doccomment">/// static RWLOCK: RwLock&lt;usize&gt; = RwLock::new(0);</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// // Create worker threads to inclement the value by 2.</span>
 <span class="doccomment">/// for _ in 0..WORKER_NUM {</span>
-<span class="doccomment">///     let c_rwlock = rwlock.clone();</span>
-<span class="doccomment">///</span>
 <span class="doccomment">///     let handle = thread::spawn(move || {</span>
-<span class="doccomment">///         let mut num = c_rwlock.write().unwrap();</span>
+<span class="doccomment">///         let mut num = RWLOCK.write().unwrap();</span>
 <span class="doccomment">///         *num += 2;</span>
 <span class="doccomment">///     });</span>
 <span class="doccomment">///</span>
@@ -886,7 +896,7 @@
 <span class="doccomment">/// // Enclosing the lock with `{}` to drop it before waiting for the worker</span>
 <span class="doccomment">/// // threads; otherwise, deadlocks could be occurred.</span>
 <span class="doccomment">/// {</span>
-<span class="doccomment">///     let num = rwlock.read().unwrap();</span>
+<span class="doccomment">///     let num = RWLOCK.read().unwrap();</span>
 <span class="doccomment">///     assert_eq!(0, *num % 2);</span>
 <span class="doccomment">/// }</span>
 <span class="doccomment">///</span>
@@ -896,7 +906,7 @@
 <span class="doccomment">/// }</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// // Make sure the value is incremented by 2 times the worker count.</span>
-<span class="doccomment">/// let num = rwlock.read().unwrap();</span>
+<span class="doccomment">/// let num = RWLOCK.read().unwrap();</span>
 <span class="doccomment">/// assert_eq!(2 * WORKER_NUM, *num);</span>
 <span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> {
@@ -907,6 +917,7 @@
     <span class="comment">// Use helper functions for lock state.</span>
     <span class="ident">lock</span>: <span class="ident">AtomicU64</span>,
 
+    <span class="ident">_phantom</span>: <span class="ident">PhantomRwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
     <span class="ident">data</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
 }
 
@@ -915,16 +926,27 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">///</span>
+    <span class="doccomment">/// Declare as a static variable.</span>
+    <span class="doccomment">///</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use std::sync::RwLock;</span>
+    <span class="doccomment">/// use spin_sync::RwLock;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// static LOCK: RwLock&lt;i32&gt; = RwLock::new(5);</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Declare as a local variable.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use spin_sync::RwLock;</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// let lock = RwLock::new(5);</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">lock</span> <span class="op">=</span> <span class="ident">AtomicU64</span>::<span class="ident">new</span>(<span class="ident">INIT</span>);
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">UnsafeCell</span>::<span class="ident">new</span>(<span class="ident">t</span>);
-
-        <span class="self">Self</span> { <span class="ident">lock</span>, <span class="ident">data</span> }
+    <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">t</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">lock</span>: <span class="ident">AtomicU64</span>::<span class="ident">new</span>(<span class="ident">INIT</span>),
+            <span class="ident">data</span>: <span class="ident">UnsafeCell</span>::<span class="ident">new</span>(<span class="ident">t</span>),
+            <span class="ident">_phantom</span>: <span class="ident">PhantomRwLock</span> {},
+        }
     }
 
     <span class="doccomment">/// Consumes this instance and returns the underlying data.</span>
@@ -1325,14 +1347,14 @@
 <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;if unused the RwLock will immediately unlock&quot;</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">_phantom</span>: <span class="ident">PhantomNotSend</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>, <span class="comment">// To implement !Send.</span>
+    <span class="ident">_phantom</span>: <span class="ident">PhantomRwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>, <span class="comment">// To implement !Send.</span>
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">RwLockReadGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">rwlock</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomNotSend</span>::<span class="ident">default</span>(),
+            <span class="ident">_phantom</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
         }
     }
 }
@@ -1402,14 +1424,14 @@
 <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;if unused the RwLock will immediately unlock&quot;</span>]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
     <span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">_phantom</span>: <span class="ident">PhantomNotSend</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>, <span class="comment">// To implement !Send.</span>
+    <span class="ident">_phantom</span>: <span class="ident">PhantomRwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span>, <span class="comment">// To implement !Send.</span>
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">RwLockWriteGuard</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">T</span><span class="op">&gt;</span> {
     <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">rwlock</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RwLock</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">rwlock</span>,
-            <span class="ident">_phantom</span>: <span class="ident">PhantomNotSend</span>::<span class="ident">default</span>(),
+            <span class="ident">_phantom</span>: <span class="ident">Default</span>::<span class="ident">default</span>(),
         }
     }
 }
@@ -1634,4 +1656,4 @@
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g., <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g., <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g., <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "spin_sync";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "spin_sync";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
