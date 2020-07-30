@@ -15,7 +15,7 @@ The main features are as follows.
 1. Add the following line in dependencies section in your Cargo.toml.
 
    ```Cargo.toml
-   spin-sync = "0.1.2"
+   spin-sync = "0.2.0"
    ```
 
 1. Build, test and run your project.
