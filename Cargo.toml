@@ -7,10 +7,11 @@ edition = "2018"
 description = """
 Synchronization primitives using spinlock.
 The interface resembles std::sync.
+The constructors of public structs are const; i.e. it is possible to declare static Mutex<T> as long as T can be build statically.
 """
 
 readme = "README.md"
-keywords = ["spin", "lock", "sync", "mutex", "rwlock", "once"]
+keywords = ["spin", "lock", "sync", "mutex", "spin_lock"]
 documentation = "https://wbcchsyn.github.io/spin-sync-rs/index.html"
 
 license = "MIT"
