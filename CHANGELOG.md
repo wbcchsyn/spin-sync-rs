@@ -18,4 +18,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 ## 0.1.2 - 2020-07-26
 ### Added
-- Create struct `Once`
+- Create struct `Once`.
+
+## 0.2.0 - 2020-07-30
+### Added
+- Create struct `Barrier` .
+- Make function `Mutex::new` , and `RwLockGuard::new` const.

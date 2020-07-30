@@ -5,17 +5,17 @@
 //!
 //! The main features are as follows.
 //!
-//! * Declaring public structs `Mutex` , `RwLock` , and `Once` . The interfaces are resembles those of `std::sync` .
+//! * Declaring public structs `Mutex` , `RwLock` , `Once` , `Barrier` . The interfaces are resembles those of `std::sync` .
 //! * Ensuring safety as much as `std::sync` , including poisoning strategy and marker traits.
-//! * Unlike to `std::sync`, functions `Mutex::new` and `RwLock::new` are const; i.e. it is possible to declare
-//!   static `Mutex<T>` and static `RwLock<T>` variables as long as T can be constructed statically.
+//! * Unlike to `std::sync`, the constructors of the public structs are const; i.e. it is possible to declare
+//!   static `Mutex<T>` as long as T can be build statically.
 //!
 //! ## How to use
 //!
 //! 1. Add the following line in dependencies section in your Cargo.toml.
 //!
 //!    ```Cargo.toml
-//!    spin-sync = "0.1.2"
+//!    spin-sync = "0.2.0"
 //!    ```
 //!
 //! 1. Build, test and run your project.
