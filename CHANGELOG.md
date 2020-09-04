@@ -24,3 +24,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Added
 - Create struct `Barrier` .
 - Make function `Mutex::new` , and `RwLockGuard::new` const.
+
+## 0.2.1 - 2020-09-04
+### Fixed
+- Fix the documentation URL.
