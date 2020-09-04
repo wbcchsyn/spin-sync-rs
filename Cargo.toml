@@ -12,7 +12,7 @@ The constructors of public structs are const; i.e. it is possible to declare sta
 
 readme = "README.md"
 keywords = ["spin", "lock", "sync", "mutex", "spin_lock"]
-documentation = "https://wbcchsyn.github.io/spin-sync-rs/index.html"
+documentation = "https://wbcchsyn.github.io/spin-sync-rs/spin_sync/index.html"
 
 license = "MIT"
 
