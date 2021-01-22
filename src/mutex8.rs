@@ -53,7 +53,7 @@
 
 use crate::misc::PhantomMutexGuard;
 use crate::result::{TryLockError, TryLockResult};
-use std::fmt::{self, Display};
+use std::fmt::{self, Debug, Display};
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::thread;
 
@@ -100,6 +100,14 @@ impl Mutex8 {
 impl Display for Mutex8 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Mutex8")
+    }
+}
+
+impl Debug for Mutex8 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Mutex8")
+            .field("locked_bits", &self.locked_bits())
+            .finish()
     }
 }
 
