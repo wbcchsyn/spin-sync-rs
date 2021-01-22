@@ -325,4 +325,29 @@ impl Mutex8Guard<'_> {
             }
         } {}
     }
+
+    /// Returns the bits that `self` is holding.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    ///
+    /// // Acquire 0x01 and 0x02 at the same time.
+    /// let mut guard = mutex8.lock(0x03);
+    /// assert_eq!(0x03, guard.lock_bits());
+    ///
+    /// // Release only 0x02. (0x01 is left.)
+    /// guard.release(0x02);
+    /// assert_eq!(0x01, guard.lock_bits());
+    ///
+    /// // Release 0x01. (No lock is left.)
+    /// guard.release(0x01);
+    /// assert_eq!(0x00, guard.lock_bits());
+    /// ```
+    pub fn lock_bits(&self) -> u8 {
+        self.bits
+    }
 }
