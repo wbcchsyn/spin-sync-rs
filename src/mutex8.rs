@@ -52,6 +52,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use crate::misc::PhantomMutexGuard;
+use crate::result::{TryLockError, TryLockResult};
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::thread;
 
@@ -148,6 +149,83 @@ impl Mutex8 {
             mutex8: &self,
             _phantom: Default::default(),
         }
+    }
+
+    /// Attempts to acquire lock(s) indicated by `lock_bits` and returns an RAII guard object if
+    /// succeeded.
+    ///
+    /// Each bit of `lock_bits` indicates the lock of `Mutex8` . For example, '0x01' corresponds
+    /// to the first lock and '0x02' does to the second lock. If 2 or more than 2 bits are set, the
+    /// `lock_bits` means all of them. In case of '0x03', for example, it means both the first and
+    /// the second locks.
+    ///
+    /// Behaves like [`lock`] except for this method returns an error immediately if another user
+    /// is holding the lock.
+    ///
+    /// This method does not block.
+    ///
+    /// # Errors
+    ///
+    /// If another user is holding this mutex, [`TryLockError::WouldBlock`] is returned.
+    ///
+    /// [`lock`]: #method.lock
+    /// [`TryLockError::WouldBlock`]: type.TryLockError.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    ///
+    /// // Try to acquire 0x01 twice. The second try will be fail.
+    /// {
+    ///     let result1 = mutex8.try_lock(0x01);
+    ///     assert_eq!(true, result1.is_ok());
+    ///
+    ///     let result2 = mutex8.try_lock(0x01);
+    ///     assert_eq!(true, result2.is_err());
+    /// }
+    ///
+    /// // Try to acquire 0x01 and 0x02 at the same time.
+    /// // After that, neither 0x01 nor 0x02 can be locked.
+    /// {
+    ///     // Acquire locks 0x01 and 0x02 at once.
+    ///     let result1 = mutex8.try_lock(0x03);
+    ///     assert_eq!(true, result1.is_ok());
+    ///
+    ///     let result2 = mutex8.try_lock(0x01);
+    ///     assert_eq!(true, result2.is_err());
+    ///
+    ///     let result3 = mutex8.try_lock(0x02);
+    ///     assert_eq!(true, result3.is_err());
+    /// }
+    /// ```
+    pub fn try_lock(&self, lock_bits: u8) -> TryLockResult<Mutex8Guard> {
+        let mut expected = 0;
+        while {
+            debug_assert_eq!(0, expected & lock_bits);
+            let locked = expected + lock_bits;
+            let current = self.0.compare_and_swap(expected, locked, Ordering::Acquire);
+
+            if expected == current {
+                // Succeeded to acquire
+                false
+            } else if current & lock_bits == 0 {
+                // The first assumuption was wrong.
+                // Try again soon.
+                expected = current;
+                true
+            } else {
+                return Err(TryLockError::WouldBlock);
+            }
+        } {}
+
+        Ok(Mutex8Guard {
+            bits: lock_bits,
+            mutex8: &self,
+            _phantom: Default::default(),
+        })
     }
 }
 
