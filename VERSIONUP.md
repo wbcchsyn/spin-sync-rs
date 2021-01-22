@@ -10,7 +10,7 @@
     1. `git commit -m 'Regenerate documents'`
 1. Update CHANGELOG.md and commit.
 1. Update "package.version" in Cargo.toml and commit.
-1. Update the version of "README.md" and of "src/lib.rs", and commit.
+1. Update README.md using `cargo readme > README.md` .
 1. Merge branch 'version\_up' into master.
 1. Create a new version tag.
 1. Reset 'docs' branch to 'master'
