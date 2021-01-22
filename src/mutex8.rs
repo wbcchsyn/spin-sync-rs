@@ -267,6 +267,40 @@ impl Mutex8Guard<'_> {
     /// Panics if `lock_bits` includes a bit that `self` is not holding.
     ///
     /// [`Mutex8`]: struct.Mutex8.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    ///
+    /// // Acquire 0x01 and 0x02 at the same time.
+    /// let mut guard = mutex8.lock(0x03);
+    ///
+    /// {
+    ///     // Fail to acquire 0x01 again.
+    ///     let e = mutex8.try_lock(0x01);
+    ///     assert!(e.is_err());
+    ///
+    ///     // Fail to acquire 0x02 again.
+    ///     let e = mutex8.try_lock(0x02);
+    ///     assert!(e.is_err());
+    /// }
+    ///
+    /// // Release only 0x01. (0x02 is left.)
+    /// guard.release(0x01);
+    ///
+    /// {
+    ///     // Success to acquire 0x01 now.
+    ///     let o = mutex8.try_lock(0x01);
+    ///     assert!(o.is_ok());
+    ///
+    ///     // Still fail to acquire 0x02.
+    ///     let e = mutex8.try_lock(0x02);
+    ///     assert!(e.is_err());
+    /// }
+    /// ```
     pub fn release(&mut self, lock_bits: u8) {
         assert_eq!(lock_bits, self.bits & lock_bits);
 
