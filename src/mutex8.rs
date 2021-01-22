@@ -52,7 +52,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use crate::misc::PhantomMutexGuard;
-use std::sync::atomic::AtomicU8;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 /// `Mutex8` is a set of mutexes. Each instance includes 8 mutexes.
 ///
@@ -105,4 +105,48 @@ pub struct Mutex8Guard<'a> {
     bits: u8,
     mutex8: &'a Mutex8,
     _phantom: PhantomMutexGuard<'a, u8>, // To implement !Send
+}
+
+impl Mutex8Guard<'_> {
+    /// Releases the lock(s) partially indicated by `lock_bits` .
+    ///
+    /// Each bit of `lock_bits` indicates the lock of [`Mutex8`] . For example, '0x01' corresponds
+    /// to the first lock and '0x02' does to the second lock. If 2 or more than 2 bits are set, the
+    /// `lock_bits` means all of them. In case of '0x03', for example, it means both the first and
+    /// the second locks.
+    ///
+    /// If `lock_bits` is same to that is being holded, `self` releases all the locks; otherwise,
+    /// the others will still be being holded after the method returns.
+    ///
+    /// `lock_bits` must not include a bit that `self` is not holding.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `lock_bits` includes a bit that `self` is not holding.
+    ///
+    /// [`Mutex8`]: struct.Mutex8.html
+    pub fn release(&mut self, lock_bits: u8) {
+        assert_eq!(lock_bits, self.bits & lock_bits);
+
+        let mut expected = self.bits;
+        while {
+            debug_assert_eq!(self.bits, expected & self.bits);
+            let unlocked = expected - lock_bits;
+            let current = self
+                .mutex8
+                .0
+                .compare_and_swap(expected, unlocked, Ordering::Release);
+
+            if current == expected {
+                // Succeeded to release.
+                self.bits -= lock_bits;
+                false
+            } else {
+                // First assumption was wrong.
+                // Try again.
+                expected = current;
+                true
+            }
+        } {}
+    }
 }
