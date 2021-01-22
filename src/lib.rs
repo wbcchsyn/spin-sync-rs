@@ -121,12 +121,14 @@
 mod barrier;
 mod misc;
 mod mutex;
+mod mutex8;
 mod once;
 mod result;
 mod rwlock;
 
 pub use crate::barrier::{Barrier, BarrierWaitResult};
 pub use crate::mutex::{Mutex, MutexGuard};
+pub use crate::mutex8::{Mutex8, Mutex8Guard};
 pub use crate::once::{Once, OnceState};
 pub use crate::result::{LockResult, PoisonError, TryLockError, TryLockResult};
 pub use crate::rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
