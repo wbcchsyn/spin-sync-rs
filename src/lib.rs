@@ -60,8 +60,11 @@
 //!
 //! * Declaring public structs `Mutex` , `RwLock` , `Once` , `Barrier` . The interfaces are resembles those of `std::sync` .
 //! * Ensuring safety as much as `std::sync` , including poisoning strategy and marker traits.
-//! * Unlike to `std::sync`, the constructors of the public structs are const; i.e. it is possible to declare
-//!   static `Mutex<T>` as long as T can be build statically.
+//! * Declaring public struct `Mutex8` , which behaves like a set of 8 `Mutex` instances except for
+//!   it gives up poison strategy. It is possible to acquire 2 or more than 2 locks of 1 `Mutex8`
+//!   instance at once.
+//! * Unlike to `std::sync`, the constructors of the public structs are const. For example, it is
+//!   possible to declare static `Mutex<T>` as long as T can be build statically.
 //!
 //! # Examples
 //!
