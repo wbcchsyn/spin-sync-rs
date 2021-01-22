@@ -50,3 +50,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+
+use std::sync::atomic::AtomicU8;
+
+/// `Mutex8` is a set of mutexes. Each instance includes 8 mutexes.
+///
+/// The differences between `Mutex8` and [`Mutex`] are as follows.
+///
+/// - `Mutex8` is not template structure. User must make sure to acquire lock before accessing to
+///   the protected object. (Compiler cannot check it.)
+/// - `Mutex8` gives up poisoning strategy. (This feature makes the performance better. It is a
+///   good idea to use `Mutex8` instead of [`Mutex`] for the performance.)
+/// - User can acquire 2 or more than 2 locks of one `Mutex8` instance at once.
+///
+/// [`Mutex`]: struct.Mutex.html
+pub struct Mutex8(AtomicU8);
