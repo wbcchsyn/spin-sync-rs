@@ -53,6 +53,7 @@
 
 use crate::misc::PhantomMutexGuard;
 use crate::result::{TryLockError, TryLockResult};
+use std::fmt::{self, Display};
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::thread;
 
@@ -95,7 +96,14 @@ impl Mutex8 {
     pub const fn new() -> Self {
         Self(AtomicU8::new(0))
     }
+}
+impl Display for Mutex8 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Mutex8")
+    }
+}
 
+impl Mutex8 {
     /// Blocks the current thread until acquiring the lock(s) indicated by `lock_bits` and returns
     /// an RAII guard object.
     ///
