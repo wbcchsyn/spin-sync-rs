@@ -286,6 +286,12 @@ impl Drop for Mutex8Guard<'_> {
     }
 }
 
+impl Display for Mutex8Guard<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Mutex8Guard")
+    }
+}
+
 impl Mutex8Guard<'_> {
     /// Releases the lock(s) partially indicated by `lock_bits` .
     ///
