@@ -65,3 +65,31 @@ use std::sync::atomic::AtomicU8;
 ///
 /// [`Mutex`]: struct.Mutex.html
 pub struct Mutex8(AtomicU8);
+
+impl Mutex8 {
+    /// Creates a new instance in an unlocked state ready for use.
+    ///
+    /// Unlike to `std::sync::Mutex` , this is a const function.
+    /// It can be use to initialize static variable.
+    ///
+    /// # Examples
+    ///
+    /// Declaring a static variable.
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// static mutex8: Mutex8 = Mutex8::new();
+    /// ```
+    ///
+    /// Declaring a local variable.
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    /// ```
+    pub const fn new() -> Self {
+        Self(AtomicU8::new(0))
+    }
+}
