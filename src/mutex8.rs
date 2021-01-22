@@ -227,6 +227,35 @@ impl Mutex8 {
             _phantom: Default::default(),
         })
     }
+
+    /// Returns the bits that some [`Mutex8Guard`] instance(s) is holding.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    ///
+    /// // Acquire 0x01.
+    /// let guard1 = mutex8.lock(0x01);
+    /// assert_eq!(0x01, mutex8.locked_bits());
+    ///
+    /// // Acquire 0x02.
+    /// let guard2 = mutex8.lock(0x02);
+    /// assert_eq!(0x03, mutex8.locked_bits());
+    ///
+    /// // Acquire 0x04 and 0x08 at the same time.
+    /// let mut guard3 = mutex8.lock(0x0c);
+    /// assert_eq!(0x0f, mutex8.locked_bits());
+    ///
+    /// // Release 0x08.
+    /// guard3.release(0x08);
+    /// assert_eq!(0x07, mutex8.locked_bits());
+    /// ```
+    pub fn locked_bits(&self) -> u8 {
+        self.0.load(Ordering::Relaxed)
+    }
 }
 
 /// An RAII implementation of a "scoped lock(s)" of a [`Mutex8`] .
