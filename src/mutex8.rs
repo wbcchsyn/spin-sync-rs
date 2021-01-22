@@ -53,6 +53,7 @@
 
 use crate::misc::PhantomMutexGuard;
 use std::sync::atomic::{AtomicU8, Ordering};
+use std::thread;
 
 /// `Mutex8` is a set of mutexes. Each instance includes 8 mutexes.
 ///
@@ -92,6 +93,61 @@ impl Mutex8 {
     /// ```
     pub const fn new() -> Self {
         Self(AtomicU8::new(0))
+    }
+
+    /// Blocks the current thread until acquiring the lock(s) indicated by `lock_bits` and returns
+    /// an RAII guard object.
+    ///
+    /// Each bit of `lock_bits` indicates the lock of `Mutex8` . For example, '0x01' corresponds
+    /// to the first lock and '0x02' does to the second lock. If 2 or more than 2 bits are set, the
+    /// `lock_bits` means all of them. In case of '0x03', for example, it means both the first and
+    /// the second locks.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use spin_sync::Mutex8;
+    ///
+    /// let mutex8 = Mutex8::new();
+    ///
+    /// // Acquire '0x01' and '0x02' in order.
+    /// {
+    ///     let guard1 = mutex8.lock(0x01);
+    ///     let guard2 = mutex8.lock(0x02);
+    /// }
+    ///
+    /// // Acquire '0x01' and '0x02' at the same time.
+    /// {
+    ///     let guard3 = mutex8.lock(0x03);
+    /// }
+    /// ```
+    pub fn lock(&self, lock_bits: u8) -> Mutex8Guard {
+        let mut expected = 0;
+        while {
+            debug_assert_eq!(0, expected & lock_bits);
+            let locked = expected + lock_bits;
+            let current = self.0.compare_and_swap(expected, locked, Ordering::Acquire);
+
+            if expected == current {
+                // Succeeded to acquire
+                false
+            } else if current & lock_bits == 0 {
+                // The first assumuption was wrong.
+                // Try again soon.
+                expected = current;
+                true
+            } else {
+                // Lock competition.
+                thread::yield_now();
+                true
+            }
+        } {}
+
+        Mutex8Guard {
+            bits: lock_bits,
+            mutex8: &self,
+            _phantom: Default::default(),
+        }
     }
 }
 
