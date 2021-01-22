@@ -300,6 +300,14 @@ impl Display for Mutex8Guard<'_> {
     }
 }
 
+impl Debug for Mutex8Guard<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Mutex8Guard")
+            .field("lock_bits", &self.lock_bits())
+            .finish()
+    }
+}
+
 impl Mutex8Guard<'_> {
     /// Releases the lock(s) partially indicated by `lock_bits` .
     ///
