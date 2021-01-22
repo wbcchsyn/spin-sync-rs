@@ -51,6 +51,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+use crate::misc::PhantomMutexGuard;
 use std::sync::atomic::AtomicU8;
 
 /// `Mutex8` is a set of mutexes. Each instance includes 8 mutexes.
@@ -92,4 +93,16 @@ impl Mutex8 {
     pub const fn new() -> Self {
         Self(AtomicU8::new(0))
     }
+}
+
+/// An RAII implementation of a "scoped lock(s)" of a [`Mutex8`] .
+///
+/// When this structure is dropped, all the lock(s) will be released at once.
+///
+/// [`Mutex8`]: struct.Mutex8.html
+#[must_use = "if unused the Mutex8 will immediately unlock"]
+pub struct Mutex8Guard<'a> {
+    bits: u8,
+    mutex8: &'a Mutex8,
+    _phantom: PhantomMutexGuard<'a, u8>, // To implement !Send
 }
