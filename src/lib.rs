@@ -63,23 +63,7 @@
 //! * Unlike to `std::sync`, the constructors of the public structs are const; i.e. it is possible to declare
 //!   static `Mutex<T>` as long as T can be build statically.
 //!
-//! ## How to use
-//!
-//! 1. Add the following line in dependencies section in your Cargo.toml.
-//!
-//!    ```Cargo.toml
-//!    spin-sync = "0.2.1"
-//!    ```
-//!
-//! 1. Build, test and run your project.
-//!
-//!    ```shell
-//!    cargo build
-//!    cargo test
-//!    cargo run
-//!    ```
-//!
-//! ## Examples
+//! # Examples
 //!
 //! Declare `static spin_sync::Mutex<u64>` variable and update from multi threads.
 //! It is impossible in case of `std::sync::Mutex` .
