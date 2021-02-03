@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 - Create struct `Barrier` .
 - Make function `Mutex::new` , and `RwLockGuard::new` const.
 
-## 0.2.1 - 2020-09-04
-### Fixed
-- Fix the documentation URL.
+## 0.3.0 - 2021-01-23
+### Added
+- Create struct `Mutex8` .
+
+## 0.3.1 - 2021-02-03
+###  Changed
+- Add attribute `[inline]` to methods of `Mutex8` .
