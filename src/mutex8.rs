@@ -93,11 +93,13 @@ impl Mutex8 {
     ///
     /// let mutex8 = Mutex8::new();
     /// ```
+    #[inline]
     pub const fn new() -> Self {
         Self(AtomicU8::new(0))
     }
 }
 impl Display for Mutex8 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Mutex8")
     }
@@ -138,6 +140,7 @@ impl Mutex8 {
     ///     let guard3 = mutex8.lock(0x03);
     /// }
     /// ```
+    #[inline]
     pub fn lock(&self, lock_bits: u8) -> Mutex8Guard {
         let mut expected = 0;
         while {
@@ -217,6 +220,7 @@ impl Mutex8 {
     ///     assert_eq!(true, result3.is_err());
     /// }
     /// ```
+    #[inline]
     pub fn try_lock(&self, lock_bits: u8) -> TryLockResult<Mutex8Guard> {
         let mut expected = 0;
         while {
@@ -269,6 +273,7 @@ impl Mutex8 {
     /// guard3.release(0x08);
     /// assert_eq!(0x07, mutex8.locked_bits());
     /// ```
+    #[inline]
     pub fn locked_bits(&self) -> u8 {
         self.0.load(Ordering::Relaxed)
     }
@@ -287,6 +292,7 @@ pub struct Mutex8Guard<'a> {
 }
 
 impl Drop for Mutex8Guard<'_> {
+    #[inline]
     fn drop(&mut self) {
         if self.bits != 0 {
             self.release(self.bits);
@@ -295,6 +301,7 @@ impl Drop for Mutex8Guard<'_> {
 }
 
 impl Display for Mutex8Guard<'_> {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Mutex8Guard")
     }
@@ -360,6 +367,7 @@ impl Mutex8Guard<'_> {
     ///     assert!(e.is_err());
     /// }
     /// ```
+    #[inline]
     pub fn release(&mut self, lock_bits: u8) {
         assert_eq!(lock_bits, self.bits & lock_bits);
 
@@ -406,6 +414,7 @@ impl Mutex8Guard<'_> {
     /// guard.release(0x01);
     /// assert_eq!(0x00, guard.lock_bits());
     /// ```
+    #[inline]
     pub fn lock_bits(&self) -> u8 {
         self.bits
     }
