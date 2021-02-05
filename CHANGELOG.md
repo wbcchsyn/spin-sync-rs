@@ -32,3 +32,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ## 0.3.1 - 2021-02-03
 ###  Changed
 - Add attribute `[inline]` to methods of `Mutex8` .
+
+# 0.3.2 - 2021-02-05
+### Added
+- Create constant `Mutex8::LEN` .
+- Create method `Mutex8.len()` .
