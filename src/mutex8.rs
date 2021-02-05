@@ -71,6 +71,9 @@ use std::thread;
 pub struct Mutex8(AtomicU8);
 
 impl Mutex8 {
+    /// The number of mutexes that one `Mutex8` has.
+    pub const LEN: usize = 8;
+
     /// Creates a new instance in an unlocked state ready for use.
     ///
     /// Unlike to `std::sync::Mutex` , this is a const function.
