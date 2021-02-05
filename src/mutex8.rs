@@ -280,6 +280,11 @@ impl Mutex8 {
     pub fn locked_bits(&self) -> u8 {
         self.0.load(Ordering::Relaxed)
     }
+
+    /// The number of mutexes that one `Mutex8` has.
+    pub const fn len(&self) -> usize {
+        Self::LEN
+    }
 }
 
 /// An RAII implementation of a "scoped lock(s)" of a [`Mutex8`] .
